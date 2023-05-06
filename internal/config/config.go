@@ -1,29 +1,31 @@
 package config
 
 type Config struct {
-	BackendList BackendSlice `json:"backend_list"`
+	BackendList BackendList `json:"backend_list"`
 }
 
-type BackendSlice []Backend
+type BackendList []Backend
 
-func (s BackendSlice) Match(name, typ string) *Backend {
+func (s BackendList) Match(name string) Backend {
 	if len(s) <= 0 {
-		return nil
+		return Backend{}
 	}
 	for _, backend := range s {
-		if backend.Name == name && backend.Type == typ {
-			return &backend
+		if backend.Name == name {
+			return backend
 		}
 	}
-	return nil
+	return Backend{}
 }
 
 type Backend struct {
-	Name        string                 `json:"name"`
-	Type        string                 `json:"type"`
-	Addr        string                 `json:"addr"`
-	Auth        Auth                   `json:"auth"`
-	MultiSearch map[string]MultiSearch `json:"multi_search"`
+	Name           string                  `json:"name"`
+	Type           string                  `json:"type"`
+	Addr           string                  `json:"addr"`
+	Auth           Auth                    `json:"auth"`
+	MultiSearch    map[string]MultiSearch  `json:"multi_search"`     // 多索引/日志存储查询
+	DefaultFields  map[string][]string     `json:"default_fields"`   // 默认查询字段
+	BuildInQueries map[string]BuildInQuery `json:"build_in_queries"` // 内置的快捷查询
 }
 
 type Auth struct {
@@ -34,6 +36,21 @@ type Auth struct {
 }
 
 type MultiSearch struct {
-	Project string   `json:"project"`
-	Storage []string `json:"storage"`
+	IndexList    []string `json:"index_list"`
+	Project      string   `json:"project"`
+	LogStoreList []string `json:"log_store_list"`
+}
+
+type BuildInQuery struct {
+	Must    []BuildInQueryEntry `json:"must"`
+	MustNot []BuildInQueryEntry `json:"must_not"`
+	Or      []BuildInQueryEntry `json:"or"`
+}
+
+type BuildInQueryEntry struct {
+	Name     string        `json:"name"`
+	Field    string        `json:"field"`
+	Values   []interface{} `json:"values"`
+	Operator string        `json:"operator"`
+	Always   bool          `json:"always"`
 }

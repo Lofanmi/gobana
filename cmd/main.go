@@ -2,6 +2,8 @@ package main
 
 import (
 	"time"
+
+	"github.com/Lofanmi/gobana/cmd/inject"
 )
 
 func main() {

@@ -25,6 +25,6 @@ func GetConfig() Config {
 
 // GetBackendList
 // @autowire(set=config)
-func GetBackendList() BackendSlice {
+func GetBackendList() BackendList {
 	return GetConfig().BackendList
 }

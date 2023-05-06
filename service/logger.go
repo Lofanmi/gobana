@@ -9,9 +9,12 @@ type Logger interface {
 	Search(ctx context.Context, req SearchRequest) (resp SearchResponse, err error)
 }
 
-type QueryBy interface {
-	QueryByHuman | QueryByQueryString | QueryBySLS
-}
+type QueryType = string
+
+const (
+	QueryTypeByHuman       QueryType = "query_by_human"
+	QueryTypeByQueryString QueryType = "query_by_query_string"
+)
 
 type QueryByHuman struct {
 	Or      []string `json:"or"`
@@ -34,8 +37,8 @@ type SearchRequest struct {
 	TimeA    int64       `json:"time_a"`
 	TimeB    int64       `json:"time_b"`
 	Backend  string      `json:"backend"`
-	Store    string      `json:"store"`
-	QueryBy  int         `json:"query_by"`
+	Storage  string      `json:"storage"`
+	QueryBy  string      `json:"query_by"`
 	Query    interface{} `json:"query"`
 }
 

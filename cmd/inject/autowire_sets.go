@@ -12,6 +12,6 @@ import (
 var Sets = wire.NewSet(
 	AppSet,
 	ConfigSet,
-	SdksSet,
+	LogicsSet,
 	ServiceSet,
 )
