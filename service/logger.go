@@ -17,13 +17,15 @@ const (
 )
 
 type QueryByHuman struct {
-	Or      []string `json:"or"`
-	Must    []string `json:"must"`
-	MustNot []string `json:"must_not"`
+	Or             []string `json:"or"`
+	Must           []string `json:"must"`
+	MustNot        []string `json:"must_not"`
+	TrackTotalHits bool     `json:"track_total_hits"`
 }
 
 type QueryByQueryString struct {
-	QueryString string `json:"query_string"`
+	QueryString    string `json:"query_string"`
+	TrackTotalHits bool   `json:"track_total_hits"`
 }
 
 type QueryBySLS struct {

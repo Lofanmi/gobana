@@ -31,3 +31,10 @@ func DateSec(ts int64) (s string) {
 	s = time.Unix(ts, 0).Format("2006-01-02 15:04:05")
 	return
 }
+
+func IfElse[T any](condition bool, a, b T) T {
+	if condition {
+		return a
+	}
+	return b
+}

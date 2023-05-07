@@ -2,11 +2,13 @@ package svc_logger
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/Lofanmi/gobana/internal/config"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
+	"github.com/olivere/elastic/v7"
 )
 
 var _ service.Logger = &Service{}
@@ -56,7 +58,40 @@ func (s *Service) searchByElastic(ctx context.Context, backend config.Backend, r
 	if err != nil {
 		return
 	}
-	_ = cli
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	m, err := s.elasticSearchResult(ctx, cli, backend, req)
+	if err != nil {
+		return
+	}
+	_ = m
+	return
+}
+
+func (s *Service) elasticSearchResult(ctx context.Context, cli *elastic.Client, backend config.Backend, req service.SearchRequest) (m map[string]*elastic.SearchResult, err error) {
+	queries, trackTotalHits, err := s.QueryBuilder.SearchQueryElastic(backend, req)
+	wg := new(sync.WaitGroup)
+	mu := new(sync.RWMutex)
+	m = map[string]*elastic.SearchResult{}
+	for i, q := range queries {
+		wg.Add(1)
+		go func(index string, query elastic.Query, sortFields []config.SortField) {
+			defer wg.Done()
+			search := cli.Search()
+			search.Index(index).TrackTotalHits(trackTotalHits).Query(query).Pretty(false).Version(true)
+			search.From((req.PageNo - 1) * req.PageSize).Size(req.PageSize)
+			for _, sortField := range sortFields {
+				search.Sort(sortField.Field, sortField.Ascending)
+			}
+			result, e := search.Do(ctx)
+			if e == nil {
+				mu.Lock()
+				m[index] = result
+				mu.Unlock()
+			}
+		}(i, q, backend.SortFields[i])
+	}
+	wg.Wait()
 	return
 }
 

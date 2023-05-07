@@ -24,7 +24,9 @@ type Backend struct {
 	Addr           string                  `json:"addr"`
 	Auth           Auth                    `json:"auth"`
 	MultiSearch    map[string]MultiSearch  `json:"multi_search"`     // 多索引/日志存储查询
+	TimeField      map[string]string       `json:"time_field"`       // 时间排序字段
 	DefaultFields  map[string][]string     `json:"default_fields"`   // 默认查询字段
+	SortFields     map[string][]SortField  `json:"sort_fields"`      // 字段排序
 	BuildInQueries map[string]BuildInQuery `json:"build_in_queries"` // 内置的快捷查询
 }
 
@@ -39,6 +41,11 @@ type MultiSearch struct {
 	IndexList    []string `json:"index_list"`
 	Project      string   `json:"project"`
 	LogStoreList []string `json:"log_store_list"`
+}
+
+type SortField struct {
+	Field     string `json:"field"`
+	Ascending bool   `json:"ascending"`
 }
 
 type BuildInQuery struct {

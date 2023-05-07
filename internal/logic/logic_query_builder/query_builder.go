@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/Lofanmi/gobana/internal/config"
+	"github.com/Lofanmi/gobana/internal/gotil"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
@@ -21,7 +22,7 @@ var (
 // @autowire(logic.QueryBuilder,set=logics)
 type QueryBuilder struct{}
 
-func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.SearchRequest) (queries []elastic.Query, err error) {
+func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.SearchRequest) (queries map[string]elastic.Query, trackTotalHits bool, err error) {
 	var data []byte
 	data, err = json.Marshal(req.Query)
 	if err != nil {
@@ -33,31 +34,38 @@ func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.Se
 		if err = json.Unmarshal(data, &q); err != nil {
 			return
 		}
+		trackTotalHits = q.TrackTotalHits
 		queries = s.queryByHuman(backend, req, q)
 	case service.QueryTypeByQueryString:
 		var q service.QueryByQueryString
 		if err = json.Unmarshal(data, &q); err != nil {
 			return
 		}
+		trackTotalHits = q.TrackTotalHits
 		queries = s.queryByQueryString(backend, req, q)
 	}
 	return
 }
 
-func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRequest, query service.QueryByHuman) (queries []elastic.Query) {
+func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRequest, query service.QueryByHuman) (queries map[string]elastic.Query) {
+	if len(query.Or) <= 0 && len(query.Must) <= 0 && len(query.MustNot) <= 0 {
+		return
+	}
+	queries = map[string]elastic.Query{}
 	indexList := backend.MultiSearch[req.Storage].IndexList
 	for _, index := range indexList {
 		defaultFields := backend.DefaultFields[index]
+		timeField := backend.TimeField[index]
 		esMainQuery := elastic.NewBoolQuery()
 		emptyCondition := true
-		TimeQuery(req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Must(query) })
+		TimeQuery(gotil.IfElse(len(timeField) > 0, timeField, atTimestamp), req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Must(query) })
 		OrQueries(defaultFields, query.Or, &emptyCondition, func(orQueries []elastic.Query) {
 			esMainQuery.Should(orQueries...).MinimumNumberShouldMatch(1)
 		})
 		MustOrMustNotQueries(defaultFields, query.Must, &emptyCondition, func(query elastic.Query) { esMainQuery.Must(query) })
 		MustOrMustNotQueries(defaultFields, query.MustNot, &emptyCondition, func(query elastic.Query) { esMainQuery.MustNot(query) })
 		if emptyCondition {
-			queries = append(queries, esMainQuery)
+			queries[index] = esMainQuery
 			continue
 		}
 		buildInQueries := backend.BuildInQueries[index]
@@ -66,12 +74,12 @@ func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRe
 		OrBuildInQueryEntry(buildInQueries.Or, func(orQueries []elastic.Query) {
 			esMainQuery.Should(orQueries...).MinimumNumberShouldMatch(1)
 		})
-		queries = append(queries, esMainQuery)
+		queries[index] = esMainQuery
 	}
 	return
 }
 
-func (s *QueryBuilder) queryByQueryString(backend config.Backend, req service.SearchRequest, query service.QueryByQueryString) (queries []elastic.Query) {
+func (s *QueryBuilder) queryByQueryString(backend config.Backend, req service.SearchRequest, query service.QueryByQueryString) (queries map[string]elastic.Query) {
 	return nil
 }
 
@@ -103,8 +111,8 @@ func OrBuildInQueryEntry(items []config.BuildInQueryEntry, fn func(orQueries []e
 	}
 }
 
-func TimeQuery(timeA, timeB int64, fn func(query elastic.Query)) {
-	query := elastic.NewRangeQuery(atTimestamp).
+func TimeQuery(timeField string, timeA, timeB int64, fn func(query elastic.Query)) {
+	query := elastic.NewRangeQuery(timeField).
 		Gte(timeA).
 		Lte(timeB).
 		Format("epoch_millis")
