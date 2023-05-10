@@ -24,6 +24,7 @@ type Service struct {
 	BackendListConfig config.BackendList
 	BackendFactory    logic.BackendFactory
 	QueryBuilder      logic.QueryBuilder
+	LogParser         logic.LogParser
 }
 
 func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp service.SearchResponse, err error) {
@@ -58,22 +59,39 @@ func (s *Service) searchByElastic(ctx context.Context, backend config.Backend, r
 	if err != nil {
 		return
 	}
-	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*time.Duration(backend.Timeout))
 	defer cancel()
-	m, err := s.elasticSearchResult(ctx, cli, backend, req)
+	m, rawQuery, trackTotalHits, err := s.elasticSearchResult(ctx, cli, backend, req)
 	if err != nil {
 		return
 	}
-	_ = m
+	resp.RawQuery = rawQuery
+	resp.Count, resp.List, err = s.LogParser.ParseElastic(backend, m)
+	if !trackTotalHits {
+		resp.Count = 10000
+	}
 	return
 }
 
-func (s *Service) elasticSearchResult(ctx context.Context, cli *elastic.Client, backend config.Backend, req service.SearchRequest) (m map[string]*elastic.SearchResult, err error) {
+func (s *Service) elasticSearchResult(
+	ctx context.Context,
+	cli *elastic.Client,
+	backend config.Backend,
+	req service.SearchRequest,
+) (
+	m map[string]*elastic.SearchResult,
+	rawQuery map[string]interface{},
+	trackTotalHits bool,
+	err error,
+) {
 	queries, trackTotalHits, err := s.QueryBuilder.SearchQueryElastic(backend, req)
 	wg := new(sync.WaitGroup)
 	mu := new(sync.RWMutex)
 	m = map[string]*elastic.SearchResult{}
+	rawQuery = map[string]interface{}{}
 	for i, q := range queries {
+		rawQuery[i], _ = q.Source()
 		wg.Add(1)
 		go func(index string, query elastic.Query, sortFields []config.SortField) {
 			defer wg.Done()

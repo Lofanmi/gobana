@@ -9,6 +9,16 @@ import (
 type LogParser struct{}
 
 func (s *LogParser) ParseElastic(backend config.Backend, m map[string]*elastic.SearchResult) (total int, logs []service.LogItem, err error) {
-	// TODO implement me
-	panic("implement me")
+	total = s.parseElasticTotal(m)
+	return
+}
+
+func (s *LogParser) parseElasticTotal(m map[string]*elastic.SearchResult) (total int) {
+	for _, result := range m {
+		if result == nil || result.Hits == nil || result.Hits.TotalHits == nil {
+			continue
+		}
+		total += int(result.Hits.TotalHits.Value)
+	}
+	return
 }
