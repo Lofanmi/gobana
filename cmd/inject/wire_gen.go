@@ -10,6 +10,7 @@ import (
 	"github.com/Lofanmi/gobana/internal/app"
 	"github.com/Lofanmi/gobana/internal/config"
 	"github.com/Lofanmi/gobana/internal/logic/logic_backend_factory"
+	"github.com/Lofanmi/gobana/internal/logic/logic_log_parser"
 	"github.com/Lofanmi/gobana/internal/logic/logic_query_builder"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_logger"
 )
@@ -17,17 +18,21 @@ import (
 // Injectors from wire.gen.go:
 
 func NewApplication() (*app.Application, func(), error) {
-	backendList := config.GetBackendList()
+	lState, cleanup := config.GetLuaState()
+	backendList := config.GetBackendList(lState)
 	backendFactory := logic_backend_factory.NewBackendFactory(backendList)
 	queryBuilder := &logic_query_builder.QueryBuilder{}
+	logParser := &logic_log_parser.LogParser{}
 	service := &svc_logger.Service{
 		BackendListConfig: backendList,
 		BackendFactory:    backendFactory,
 		QueryBuilder:      queryBuilder,
+		LogParser:         logParser,
 	}
 	application := &app.Application{
 		Logger: service,
 	}
 	return application, func() {
+		cleanup()
 	}, nil
 }

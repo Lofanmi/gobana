@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	lua "github.com/yuin/gopher-lua"
 )
 
 type Config struct {
@@ -22,7 +23,7 @@ type Backend struct {
 	TimeField      map[string]string       `json:"time_field"`       // 时间排序字段
 	DefaultFields  map[string][]string     `json:"default_fields"`   // 默认查询字段
 	SortFields     map[string][]SortField  `json:"sort_fields"`      // 字段排序
-	ParserFields   map[string][]string
+	ParserFields   ParserFields            `json:"parser_fields"`    // 字段解析器
 }
 
 type Auth struct {
@@ -57,33 +58,41 @@ type SortField struct {
 	Ascending bool   `json:"ascending"`
 }
 
+type ParserFields struct {
+	AccessLog []ParserField `json:"access_log"`
+	JsonLog   []ParserField `json:"json_log"`
+	StringLog []ParserField `json:"string_log"`
+}
+
 type ParserFieldType = string
 
 const (
-	ParserFieldTypeReplacement ParserFieldType = "replacement"
-	ParserFieldTypeScript      ParserFieldType = "script"
+	ParserFieldTypeReplacements ParserFieldType = "replacements"
+	ParserFieldTypeLua          ParserFieldType = "lua"
 )
 
 type ParserField struct {
-	Name      string `json:"name"`
-	Type      string `json:"type"`
-	FromField string `json:"from_field"`
-	ToField   string `json:"to_field"`
-	Script    string `json:"script"`
+	Name       string      `json:"name"`
+	Type       string      `json:"type"`
+	FromFields []string    `json:"from_field"`
+	ToField    string      `json:"to_field"`
+	Lua        string      `json:"lua"`
+	L          *lua.LState `json:"-"`
 }
 
-func (s *Backend) Default() {
+func (s *Backend) Default(L *lua.LState) {
 	if s.Timeout <= 0 {
 		s.Timeout = 60 * 1000
 	}
+	s.ParserFields.Default(L)
 }
 
-func (s *BackendList) Default() {
+func (s *BackendList) Default(L *lua.LState) {
 	if len(*s) <= 0 {
 		return
 	}
 	for i := 0; i < len(*s); i++ {
-		(*s)[i].Default()
+		(*s)[i].Default(L)
 	}
 }
 
@@ -99,13 +108,53 @@ func (s *BackendList) Match(name string) Backend {
 	return Backend{}
 }
 
+func (s *ParserFields) Default(L *lua.LState) {
+	for _, field := range s.AccessLog {
+		field.Default(L)
+	}
+	for _, field := range s.JsonLog {
+		field.Default(L)
+	}
+	for _, field := range s.StringLog {
+		field.Default(L)
+	}
+}
+
+func (s *ParserField) Default(L *lua.LState) {
+	s.L = L
+}
+
 func (s *ParserField) Handle(g gjson.Result, targetJSON *string) {
 	switch s.Type {
-	case ParserFieldTypeReplacement:
-		value := g.Get(s.FromField).String()
-		if newValue, err := sjson.Set(*targetJSON, s.ToField, value); err == nil {
-			*targetJSON = newValue
+	case ParserFieldTypeReplacements:
+		for _, fromField := range s.FromFields {
+			value := g.Get(fromField).String()
+			if value == "" {
+				continue
+			}
+			if newValue, err := sjson.Set(*targetJSON, s.ToField, value); err == nil {
+				*targetJSON = newValue
+			}
 		}
-	case ParserFieldTypeScript:
+	case ParserFieldTypeLua:
+		L := s.L
+		for _, fromField := range s.FromFields {
+			value := g.Get(fromField).String()
+			if value == "" {
+				continue
+			}
+			if err := L.CallByParam(lua.P{Fn: L.GetGlobal("parse"), NRet: 1, Protect: true}, lua.LString(value)); err != nil {
+				continue
+			}
+			ret := L.Get(-1)
+			L.Pop(1)
+			res, ok := ret.(lua.LString)
+			if !ok || res == "" {
+				continue
+			}
+			if newValue, err := sjson.Set(*targetJSON, s.ToField, string(res)); err == nil {
+				*targetJSON = newValue
+			}
+		}
 	}
 }

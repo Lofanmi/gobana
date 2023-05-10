@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"sync"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
 var (
@@ -25,8 +27,8 @@ func GetConfig() Config {
 
 // GetBackendList
 // @autowire(set=config)
-func GetBackendList() BackendList {
+func GetBackendList(L *lua.LState) BackendList {
 	list := GetConfig().BackendList
-	list.Default()
+	list.Default(L)
 	return list
 }

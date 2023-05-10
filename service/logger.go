@@ -63,7 +63,7 @@ const (
 )
 
 type AccessLog struct {
-	Time          int64       `json:"time"`
+	Time          string      `json:"time"`
 	Method        string      `json:"method"`
 	Scheme        string      `json:"scheme"`
 	Host          string      `json:"host"`
@@ -82,7 +82,7 @@ type AccessLog struct {
 }
 
 type JsonLog struct {
-	Time     int64       `json:"time"`
+	Time     string      `json:"time"`
 	Level    string      `json:"level"`
 	Hostname string      `json:"hostname"`
 	Path     string      `json:"path"`
@@ -90,7 +90,7 @@ type JsonLog struct {
 }
 
 type StringLog struct {
-	Time     int64       `json:"time"`
+	Time     string      `json:"time"`
 	Hostname string      `json:"hostname"`
 	Path     string      `json:"path"`
 	Source   interface{} `json:"source"`
