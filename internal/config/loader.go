@@ -1,11 +1,12 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -13,8 +14,8 @@ var (
 )
 
 type LoaderConfig struct {
-	LocalPath string `json:"local_path"`
-	LocalFile string `json:"local_file"`
+	LocalPath string `yaml:"local_path"`
+	LocalFile string `yaml:"local_file"`
 }
 
 type Loader interface {
@@ -29,13 +30,13 @@ func (localFileLoader) Load(config LoaderConfig, dst interface{}) (err error) {
 		config.LocalPath = baseDir()
 	}
 	if config.LocalFile == "" {
-		config.LocalFile = "config.json"
+		config.LocalFile = "config.yaml"
 	}
 	data, err := os.ReadFile(filepath.Join(config.LocalPath, config.LocalFile))
 	if err != nil {
 		return
 	}
-	err = json.Unmarshal(data, &dst)
+	err = yaml.Unmarshal(data, &dst)
 	return
 }
 

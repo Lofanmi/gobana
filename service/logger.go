@@ -62,6 +62,12 @@ const (
 	LogTypeStringLog LogType = "string-log"
 )
 
+type Log interface {
+	*AccessLog | *JsonLog | *StringLog
+	GetSource() interface{}
+	SetSource(v interface{})
+}
+
 type AccessLog struct {
 	Time          string      `json:"time"`
 	Method        string      `json:"method"`
@@ -97,9 +103,10 @@ type StringLog struct {
 }
 
 type LogItem struct {
-	Storage string      `json:"storage"`
-	LogType LogType     `json:"log_type"`
-	Log     interface{} `json:"log"`
+	Timestamp int64       `json:"-"`
+	Storage   string      `json:"storage"`
+	LogType   LogType     `json:"log_type"`
+	Log       interface{} `json:"log"`
 }
 
 type SearchCharts struct {
@@ -143,3 +150,16 @@ type ExportResponse struct {
 	ID   string `json:"id"`
 	Logs string `json:"logs"`
 }
+
+func (s *AccessLog) GetSource() interface{}  { return s.Source }
+func (s *AccessLog) SetSource(v interface{}) { s.Source = v }
+func (s *JsonLog) GetSource() interface{}    { return s.Source }
+func (s *JsonLog) SetSource(v interface{})   { s.Source = v }
+func (s *StringLog) GetSource() interface{}  { return s.Source }
+func (s *StringLog) SetSource(v interface{}) { s.Source = v }
+
+type LogItems []LogItem
+
+func (s LogItems) Len() int           { return len(s) }
+func (s LogItems) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s LogItems) Less(i, j int) bool { return s[i].Timestamp > s[j].Timestamp }

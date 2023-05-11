@@ -32,6 +32,15 @@ func DateSec(ts int64) (s string) {
 	return
 }
 
+func ParseTime(s string) (timestamp int64) {
+	t, err := time.Parse("2006-01-02 15:04:05", s)
+	if err != nil {
+		return
+	}
+	timestamp = t.UnixMilli()
+	return
+}
+
 func IfElse[T any](condition bool, a, b T) T {
 	if condition {
 		return a
