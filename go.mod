@@ -11,6 +11,7 @@ require (
 	github.com/tidwall/sjson v1.2.5
 	github.com/yuin/gopher-lua v1.1.0
 	go.uber.org/zap v1.19.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
