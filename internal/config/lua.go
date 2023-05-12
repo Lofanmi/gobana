@@ -8,8 +8,6 @@ var exports = map[string]lua.LGFunction{
 	"gobana_nginx_decode": luaNginxDecode,
 }
 
-// GetLuaState
-// @autowire(set=config)
 func GetLuaState() (L *lua.LState, fn func()) {
 	L = lua.NewState()
 	fn = func() { L.Close() }

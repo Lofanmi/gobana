@@ -18,8 +18,7 @@ import (
 // Injectors from wire.gen.go:
 
 func NewApplication() (*app.Application, func(), error) {
-	lState, cleanup := config.GetLuaState()
-	backendList := config.GetBackendList(lState)
+	backendList := config.GetBackendList()
 	backendFactory := logic_backend_factory.NewBackendFactory(backendList)
 	queryBuilder := &logic_query_builder.QueryBuilder{}
 	logParser := &logic_log_parser.LogParser{}
@@ -33,6 +32,5 @@ func NewApplication() (*app.Application, func(), error) {
 		Logger: service,
 	}
 	return application, func() {
-		cleanup()
 	}, nil
 }

@@ -20,9 +20,10 @@ type Backend struct {
 	Timeout        int64                   `yaml:"timeout"`          // 请求超时时间（毫秒）
 	MultiSearch    map[string]MultiSearch  `yaml:"multi_search"`     // 多索引/日志存储查询
 	BuildInQueries map[string]BuildInQuery `yaml:"build_in_queries"` // 内置的快捷查询
-	TimeField      map[string]string       `yaml:"time_field"`       // 时间排序字段
+	TimeField      map[string]string       `yaml:"time_field"`       // 时间排序字段，ES默认为@timestamp。
 	DefaultFields  map[string][]string     `yaml:"default_fields"`   // 默认查询字段
 	SortFields     map[string][]SortField  `yaml:"sort_fields"`      // 字段排序
+	ParserLogType  string                  `yaml:"parser_log_type"`  // 日志类型解析器
 	ParserFields   ParserFields            `yaml:"parser_fields"`    // 字段解析器
 }
 
@@ -78,28 +79,30 @@ const (
 )
 
 type ParserField struct {
-	Name       string      `yaml:"name"`
-	Type       string      `yaml:"type"`
-	Return     string      `yaml:"return"`
-	FromFields []string    `yaml:"from_field"`
-	ToField    string      `yaml:"to_field"`
-	Lua        string      `yaml:"lua"`
-	L          *lua.LState `yaml:"-"`
+	Name       string   `yaml:"name"`
+	Type       string   `yaml:"type"`
+	FromFields []string `yaml:"from_field"`
+	ToField    string   `yaml:"to_field"`
+	Lua        struct {
+		LogType string `yaml:"log_type"`
+		Field   string `yaml:"field"`
+	} `yaml:"lua"`
+	Return string `yaml:"return"`
 }
 
-func (s *Backend) Default(L *lua.LState) {
+func (s *Backend) Default() {
 	if s.Timeout <= 0 {
 		s.Timeout = 60 * 1000
 	}
-	s.ParserFields.Default(L)
+	s.ParserFields.Default()
 }
 
-func (s *BackendList) Default(L *lua.LState) {
+func (s *BackendList) Default() {
 	if len(*s) <= 0 {
 		return
 	}
 	for i := 0; i < len(*s); i++ {
-		(*s)[i].Default(L)
+		(*s)[i].Default()
 	}
 }
 
@@ -115,23 +118,22 @@ func (s *BackendList) Match(name string) Backend {
 	return Backend{}
 }
 
-func (s *ParserFields) Default(L *lua.LState) {
+func (s *ParserFields) Default() {
 	for _, field := range s.AccessLog {
-		field.Default(L)
+		field.Default()
 	}
 	for _, field := range s.JsonLog {
-		field.Default(L)
+		field.Default()
 	}
 	for _, field := range s.StringLog {
-		field.Default(L)
+		field.Default()
 	}
 }
 
-func (s *ParserField) Default(L *lua.LState) {
-	s.L = L
+func (s *ParserField) Default() {
 }
 
-func (s *ParserField) Handle(g gjson.Result, targetJSON *string, source string) {
+func (s *ParserField) Handle(g gjson.Result, targetJSON *string, tb *lua.LTable) {
 	switch s.Type {
 	case ParserFieldTypeReplacements:
 		for _, fromField := range s.FromFields {
@@ -144,13 +146,17 @@ func (s *ParserField) Handle(g gjson.Result, targetJSON *string, source string) 
 			}
 		}
 	case ParserFieldTypeLua:
-		L := s.L
+		L, fn := GetLuaState()
+		defer fn()
 		for _, fromField := range s.FromFields {
 			value := g.Get(fromField).String()
 			if value == "" {
 				continue
 			}
-			if err := L.CallByParam(lua.P{Fn: L.GetGlobal("parse_field"), NRet: 2, Protect: true}, lua.LString(value), lua.LString(source)); err != nil {
+			if err := L.DoString(s.Lua.Field); err != nil {
+				continue
+			}
+			if err := L.CallByParam(lua.P{Fn: L.GetGlobal("parse_field"), NRet: 2, Protect: true}, lua.LString(value), tb); err != nil {
 				continue
 			}
 			ret, errString := L.Get(-2), L.Get(-1)

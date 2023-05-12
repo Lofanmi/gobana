@@ -13,6 +13,4 @@ import (
 
 var ConfigSet = wire.NewSet(
 	config.GetBackendList,
-
-	config.GetLuaState,
 )

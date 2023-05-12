@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Lofanmi/gobana/internal/config"
+	"github.com/Lofanmi/gobana/internal/gotil"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
@@ -90,8 +91,12 @@ func (s *Service) elasticSearchResult(
 	mu := new(sync.RWMutex)
 	m = map[string]*elastic.SearchResult{}
 	rawQuery = map[string]interface{}{}
-	for i, q := range queries {
-		rawQuery[i], _ = q.Source()
+	for _index, _query := range queries {
+		_sortFields, ok := backend.SortFields[_index]
+		if !ok {
+			_sortFields = backend.SortFields[gotil.DefaultValue]
+		}
+		rawQuery[_index], _ = _query.Source()
 		wg.Add(1)
 		go func(index string, query elastic.Query, sortFields []config.SortField) {
 			defer wg.Done()
@@ -107,7 +112,7 @@ func (s *Service) elasticSearchResult(
 				m[index] = result
 				mu.Unlock()
 			}
-		}(i, q, backend.SortFields[i])
+		}(_index, _query, _sortFields)
 	}
 	wg.Wait()
 	return

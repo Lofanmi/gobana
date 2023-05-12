@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	atTimestamp = "@timestamp"
+	atTimestamp  = "@timestamp"
+	defaultValue = "default_value"
 )
 
 var (
@@ -54,8 +55,14 @@ func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRe
 	queries = map[string]elastic.Query{}
 	indexList := backend.MultiSearch[req.Storage].IndexList
 	for _, index := range indexList {
-		defaultFields := backend.DefaultFields[index]
-		timeField := backend.TimeField[index]
+		defaultFields, ok := backend.DefaultFields[index]
+		if !ok {
+			defaultFields = backend.DefaultFields[defaultValue]
+		}
+		timeField, ok := backend.TimeField[index]
+		if !ok {
+			timeField = backend.TimeField[defaultValue]
+		}
 		esMainQuery := elastic.NewBoolQuery()
 		emptyCondition := true
 		TimeQuery(gotil.IfElse(len(timeField) > 0, timeField, atTimestamp), req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Must(query) })
@@ -68,7 +75,10 @@ func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRe
 			queries[index] = esMainQuery
 			continue
 		}
-		buildInQueries := backend.BuildInQueries[index]
+		buildInQueries, ok := backend.BuildInQueries[index]
+		if !ok {
+			buildInQueries = backend.BuildInQueries[defaultValue]
+		}
 		MustOrMustNotBuildInQueryEntry(buildInQueries.Must, func(query elastic.Query) { esMainQuery.Must(query) })
 		MustOrMustNotBuildInQueryEntry(buildInQueries.MustNot, func(query elastic.Query) { esMainQuery.MustNot(query) })
 		OrBuildInQueryEntry(buildInQueries.Or, func(orQueries []elastic.Query) {
