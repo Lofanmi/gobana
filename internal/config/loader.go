@@ -19,12 +19,12 @@ type LoaderConfig struct {
 }
 
 type Loader interface {
-	Load(config LoaderConfig, dst interface{}) (err error)
+	Load(config LoaderConfig, dst *Config) (err error)
 }
 
 type localFileLoader struct{}
 
-func (localFileLoader) Load(config LoaderConfig, dst interface{}) (err error) {
+func (localFileLoader) Load(config LoaderConfig, dst *Config) (err error) {
 	config.LocalPath = strings.Trim(config.LocalPath, "/")
 	if config.LocalPath == "" {
 		config.LocalPath = baseDir()
@@ -36,11 +36,11 @@ func (localFileLoader) Load(config LoaderConfig, dst interface{}) (err error) {
 	if err != nil {
 		return
 	}
-	err = yaml.Unmarshal(data, &dst)
+	err = yaml.Unmarshal(data, dst)
 	return
 }
 
 func baseDir() string {
 	_, f, _, _ := runtime.Caller(1)
-	return strings.TrimRight(filepath.Dir(f), "/")
+	return strings.TrimRight(filepath.Dir(filepath.Dir(filepath.Dir(f))), "/")
 }

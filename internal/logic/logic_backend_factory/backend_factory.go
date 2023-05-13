@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/Lofanmi/gobana/internal/config"
+	"github.com/Lofanmi/gobana/internal/constant"
 	"github.com/Lofanmi/gobana/internal/logic"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/olivere/elastic/v7"
@@ -29,6 +30,7 @@ func NewBackendFactory(backendListConfig config.BackendList) logic.BackendFactor
 		BackendListConfig: backendListConfig,
 		m:                 map[string]interface{}{},
 		mu:                new(sync.Mutex),
+		httpClient:        new(http.Client),
 	}
 	return s
 }
@@ -76,23 +78,22 @@ func (s *BackendFactory) getClient(config config.Backend) (res interface{}, err 
 	typ := config.Type
 	if _, ok := s.m[typ]; !ok {
 		switch typ {
-		case logic.ClientTypeElasticsearch:
+		case constant.ClientTypeElasticsearch:
 			fallthrough
-		case logic.ClientTypeKibanaProxy:
+		case constant.ClientTypeKibanaProxy:
 			var cli *elastic.Client
 			cli, err = elastic.NewClient(
 				elastic.SetURL(config.Addr),
 				elastic.SetHttpClient(s.httpClient),
 				elastic.SetHealthcheck(false),
 				elastic.SetSniff(false),
-				elastic.SetGzip(true),
-				elastic.SetBasicAuth(config.Auth.Username, config.Auth.Password),
+				// elastic.SetGzip(true),
 			)
 			if err != nil {
 				return
 			}
 			s.m[typ] = cli
-		case logic.ClientTypeSLS:
+		case constant.ClientTypeSLS:
 			cli := &sls.Client{
 				Endpoint:        config.Addr,
 				AccessKeyID:     config.Auth.AccessKeyID,

@@ -1,0 +1,184 @@
+package logic_log_parser
+
+import (
+	"encoding/json"
+	"errors"
+	"sort"
+	"strings"
+	"unsafe"
+
+	"github.com/Lofanmi/gobana/internal/config"
+	"github.com/Lofanmi/gobana/internal/constant"
+	"github.com/Lofanmi/gobana/internal/gotil"
+	"github.com/Lofanmi/gobana/internal/logic"
+	"github.com/Lofanmi/gobana/service"
+	"github.com/olivere/elastic/v7"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
+	lua "github.com/yuin/gopher-lua"
+)
+
+var (
+	_ logic.LogParser = &LogParser{}
+)
+
+// LogParser
+// @autowire(logic.LogParser,set=logics)
+type LogParser struct {
+	LuaState logic.LuaState
+}
+
+func (s *LogParser) ParseElastic(backend config.Backend, m map[string]*elastic.SearchResult) (total int, logs service.LogItems, err error) {
+	total = s.parseElasticTotal(m)
+	logs = make([]service.LogItem, 0, total)
+	for _, result := range m {
+		if result == nil || result.Hits == nil {
+			continue
+		}
+		for _, hit := range result.Hits.Hits {
+			data, _ := json.Marshal(hit)
+			hitMap := map[string]interface{}{}
+			if err = json.Unmarshal(data, &hitMap); err != nil {
+				return
+			}
+			tb := gotil.MapToTable(hitMap)
+			var logInterface interface{}
+			logTime := ""
+			logType, _source, e := s.parseLogType(backend, tb)
+			_sourceTable, ok := _source.(*lua.LTable)
+			if !ok {
+				continue
+			}
+			switch logType {
+			case service.LogTypeAccessLog:
+				log := new(service.AccessLog)
+				_ = parseLog(s, backend.ParserFields.AccessLog, data, hitMap, _sourceTable, log)
+				logInterface, logTime = log, log.Time
+			case service.LogTypeJsonLog:
+				log := new(service.JsonLog)
+				_ = parseLog(s, backend.ParserFields.JsonLog, data, hitMap, _sourceTable, log)
+				logInterface, logTime = log, log.Time
+			case service.LogTypeStringLog:
+				log := new(service.StringLog)
+				_ = parseLog(s, backend.ParserFields.StringLog, data, hitMap, _sourceTable, log)
+				logInterface, logTime = log, log.Time
+			default:
+				_ = e
+				continue
+			}
+			logs = append(logs, service.LogItem{
+				Timestamp: gotil.ParseTime(logTime),
+				Storage:   hit.Index,
+				LogType:   logType,
+				Log:       logInterface,
+			})
+		}
+	}
+	sort.Sort(logs)
+	return
+}
+
+func (s *LogParser) parseElasticTotal(m map[string]*elastic.SearchResult) (total int) {
+	for _, result := range m {
+		if result == nil || result.Hits == nil || result.Hits.TotalHits == nil {
+			continue
+		}
+		total += int(result.Hits.TotalHits.Value)
+	}
+	return
+}
+
+func (s *LogParser) parseLogType(backend config.Backend, tb *lua.LTable) (logType service.LogType, _source lua.LValue, err error) {
+	L, fn := s.LuaState.GetLuaState()
+	defer fn()
+	if err = L.DoString(backend.ParserLogType); err != nil {
+		return
+	}
+	if err = L.CallByParam(lua.P{Fn: L.GetGlobal("parse_log_type"), NRet: 3, Protect: true}, tb); err != nil {
+		return
+	}
+	ret, _source, errString := L.Get(-3), L.Get(-2), L.Get(-1)
+	L.Pop(3)
+	if errString.String() != "" {
+		return
+	}
+	if res, ok := ret.(lua.LString); !ok {
+		err = errors.New("ret.(lua.LString) -> !ok")
+	} else {
+		logType = service.LogType(res)
+	}
+	return
+}
+
+func parseLog[T service.Log](parser *LogParser, parserFields []config.ParserField, log []byte, source map[string]interface{}, _sourceTable *lua.LTable, res T) (err error) {
+	g := gjson.ParseBytes(log)
+	targetJSON := ""
+	for _, field := range parserFields {
+		handleParserField(parser, &field, g, &targetJSON, _sourceTable)
+	}
+	if err = json.Unmarshal(unsafe.Slice(unsafe.StringData(targetJSON), len(targetJSON)), &res); err != nil {
+		return
+	}
+	res.SetSource(source)
+	res.Finish()
+	return
+}
+
+func handleParserField(parser *LogParser, field *config.ParserField, g gjson.Result, targetJSON *string, _sourceTable *lua.LTable) {
+	switch field.Type {
+	case constant.ParserFieldTypeReplacements:
+		var value string
+		for _, fromField := range field.FromFields {
+			value = g.Get(fromField).String()
+			if field.TrimSet != "" {
+				value = strings.Trim(value, field.TrimSet)
+			}
+			if value != "" {
+				break
+			}
+		}
+		if newValue, err := sjson.Set(*targetJSON, field.ToField, value); err == nil {
+			*targetJSON = newValue
+		}
+	case constant.ParserFieldTypeLua:
+		L, fn := parser.LuaState.GetLuaState()
+		defer fn()
+		for _, fromField := range field.FromFields {
+			value := g.Get(fromField).String()
+			if value == "" {
+				continue
+			}
+			if err := L.DoString(field.LuaField); err != nil {
+				continue
+			}
+			if err := L.CallByParam(lua.P{Fn: L.GetGlobal("parse_field"), NRet: 2, Protect: true}, lua.LString(value), _sourceTable); err != nil {
+				continue
+			}
+			ret, errString := L.Get(-2), L.Get(-1)
+			L.Pop(2)
+			if errString.String() != "" {
+				continue
+			}
+			var newValue interface{}
+			switch field.LuaReturn {
+			case constant.ParserFieldReturnString:
+				if res, ok := ret.(lua.LString); !ok {
+					continue
+				} else {
+					newValue = string(res)
+				}
+			case constant.ParserFieldReturnNumber:
+				if res, ok := ret.(lua.LNumber); !ok {
+					continue
+				} else {
+					newValue = float64(res)
+				}
+			default:
+				continue
+			}
+			if newJSON, err := sjson.Set(*targetJSON, field.ToField, newValue); err == nil {
+				*targetJSON = newJSON
+			}
+		}
+	}
+}

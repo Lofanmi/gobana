@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Lofanmi/gobana/internal/config"
-	"github.com/Lofanmi/gobana/internal/logic"
+	"github.com/Lofanmi/gobana/internal/constant"
 	"github.com/Lofanmi/gobana/service"
 )
 
@@ -27,7 +27,7 @@ func TestQueryBuilder_SearchQueryElastic(t *testing.T) {
 			name: "test1",
 			args: args{
 				backend: config.Backend{
-					Type:          logic.ClientTypeElasticsearch,
+					Type:          constant.ClientTypeElasticsearch,
 					MultiSearch:   map[string]config.MultiSearch{"程序日志": {IndexList: []string{indexName}}},
 					DefaultFields: map[string][]string{indexName: {"host", "tag"}},
 					BuildInQueries: map[string]config.BuildInQuery{

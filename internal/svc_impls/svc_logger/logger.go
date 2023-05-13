@@ -2,14 +2,21 @@ package svc_logger
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/url"
+	"reflect"
+	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/Lofanmi/gobana/internal/config"
-	"github.com/Lofanmi/gobana/internal/gotil"
+	"github.com/Lofanmi/gobana/internal/constant"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic/v7/uritemplates"
 )
 
 var _ service.Logger = &Service{}
@@ -44,11 +51,11 @@ func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp s
 
 	backend := s.BackendListConfig.Match(req.Backend)
 	switch backend.Type {
-	case logic.ClientTypeElasticsearch:
+	case constant.ClientTypeElasticsearch:
 		fallthrough
-	case logic.ClientTypeKibanaProxy:
+	case constant.ClientTypeKibanaProxy:
 		return s.searchByElastic(ctx, backend, req)
-	case logic.ClientTypeSLS:
+	case constant.ClientTypeSLS:
 		return s.searchBySLS(ctx, backend, req)
 	default:
 		return
@@ -94,7 +101,7 @@ func (s *Service) elasticSearchResult(
 	for _index, _query := range queries {
 		_sortFields, ok := backend.SortFields[_index]
 		if !ok {
-			_sortFields = backend.SortFields[gotil.DefaultValue]
+			_sortFields = backend.SortFields[constant.DefaultValue]
 		}
 		rawQuery[_index], _ = _query.Source()
 		wg.Add(1)
@@ -106,7 +113,7 @@ func (s *Service) elasticSearchResult(
 			for _, sortField := range sortFields {
 				search.Sort(sortField.Field, sortField.Ascending)
 			}
-			result, e := search.Do(ctx)
+			result, e := s.searchDo(ctx, backend, cli, search)
 			if e == nil {
 				mu.Lock()
 				m[index] = result
@@ -115,6 +122,49 @@ func (s *Service) elasticSearchResult(
 		}(_index, _query, _sortFields)
 	}
 	wg.Wait()
+	return
+}
+
+func (s *Service) searchDo(ctx context.Context, backend config.Backend, cli *elastic.Client, search *elastic.SearchService) (result *elastic.SearchResult, err error) {
+	switch backend.Type {
+	case constant.ClientTypeElasticsearch:
+		result, err = search.Do(ctx)
+	case constant.ClientTypeKibanaProxy:
+		v := reflect.ValueOf(search).Elem()
+		params := url.Values{}
+		params.Set("method", http.MethodPost)
+		field := v.FieldByName("index")
+		var indexList []string
+		for i := 0; i < field.Len(); i++ {
+			indexList = append(indexList, field.Index(i).String())
+		}
+		if len(indexList) > 0 {
+			path, _ := uritemplates.Expand("/{index}/_search", map[string]string{"index": strings.Join(indexList, ",")})
+			params.Set("path", path)
+		}
+		field = v.FieldByName("searchSource")
+		searchSource := (*elastic.SearchSource)(unsafe.Pointer(field.Pointer()))
+		body, _ := searchSource.Source()
+		headers := http.Header{}
+		headers.Set("Content-Type", "application/json")
+		headers.Set("Cookie", backend.Auth.Cookie)
+		headers.Set("kbn-version", backend.Auth.KbnVersion)
+		var res *elastic.Response
+		if res, err = cli.PerformRequest(ctx, elastic.PerformRequestOptions{
+			Method:  http.MethodPost,
+			Path:    "/api/console/proxy",
+			Params:  params,
+			Body:    body,
+			Headers: headers,
+		}); err != nil {
+			return
+		}
+		if err = json.Unmarshal(res.Body, &result); err != nil {
+			result.Header = res.Header
+			return
+		}
+		result.Header = res.Header
+	}
 	return
 }
 

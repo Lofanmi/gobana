@@ -7,13 +7,8 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-const (
-	AtTimestamp  = "@timestamp"
-	DefaultValue = "default_value"
-)
-
 func ParseTime(s string) (timestamp int64) {
-	t, err := time.Parse("2006-01-02 15:04:05", s)
+	t, err := time.Parse(time.RFC3339Nano, s)
 	if err != nil {
 		return
 	}

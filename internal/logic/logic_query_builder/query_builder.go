@@ -4,15 +4,11 @@ import (
 	"encoding/json"
 
 	"github.com/Lofanmi/gobana/internal/config"
+	"github.com/Lofanmi/gobana/internal/constant"
 	"github.com/Lofanmi/gobana/internal/gotil"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
-)
-
-const (
-	atTimestamp  = "@timestamp"
-	defaultValue = "default_value"
 )
 
 var (
@@ -57,15 +53,15 @@ func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRe
 	for _, index := range indexList {
 		defaultFields, ok := backend.DefaultFields[index]
 		if !ok {
-			defaultFields = backend.DefaultFields[defaultValue]
+			defaultFields = backend.DefaultFields[constant.DefaultValue]
 		}
 		timeField, ok := backend.TimeField[index]
 		if !ok {
-			timeField = backend.TimeField[defaultValue]
+			timeField = backend.TimeField[constant.DefaultValue]
 		}
 		esMainQuery := elastic.NewBoolQuery()
 		emptyCondition := true
-		TimeQuery(gotil.IfElse(len(timeField) > 0, timeField, atTimestamp), req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Must(query) })
+		TimeQuery(gotil.IfElse(len(timeField) > 0, timeField, constant.AtTimestamp), req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Must(query) })
 		OrQueries(defaultFields, query.Or, &emptyCondition, func(orQueries []elastic.Query) {
 			esMainQuery.Should(orQueries...).MinimumNumberShouldMatch(1)
 		})
@@ -77,7 +73,7 @@ func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRe
 		}
 		buildInQueries, ok := backend.BuildInQueries[index]
 		if !ok {
-			buildInQueries = backend.BuildInQueries[defaultValue]
+			buildInQueries = backend.BuildInQueries[constant.DefaultValue]
 		}
 		MustOrMustNotBuildInQueryEntry(buildInQueries.Must, func(query elastic.Query) { esMainQuery.Must(query) })
 		MustOrMustNotBuildInQueryEntry(buildInQueries.MustNot, func(query elastic.Query) { esMainQuery.MustNot(query) })

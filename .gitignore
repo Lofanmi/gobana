@@ -19,6 +19,8 @@
 
 # Go workspace file
 go.work
+gobana
 *.bak
+*.lua
 config.yaml
 frontend

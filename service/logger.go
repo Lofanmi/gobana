@@ -2,6 +2,14 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
+	"github.com/spf13/cast"
+	"github.com/tidwall/gjson"
 )
 
 type Logger interface {
@@ -66,14 +74,17 @@ type Log interface {
 	*AccessLog | *JsonLog | *StringLog
 	GetSource() interface{}
 	SetSource(v interface{})
+	Finish()
 }
 
 type AccessLog struct {
+	RequestID     string      `json:"request_id"`
 	Time          string      `json:"time"`
 	Method        string      `json:"method"`
 	Scheme        string      `json:"scheme"`
-	Host          string      `json:"host"`
+	Hostname      string      `json:"hostname"`
 	URI           string      `json:"uri"`
+	HttpHost      string      `json:"http_host"`
 	Query         string      `json:"query"`
 	Body          string      `json:"body"`
 	Duration      string      `json:"duration"`
@@ -83,22 +94,27 @@ type AccessLog struct {
 	XForwardedFor string      `json:"x_forwarded_for"`
 	Cookie        string      `json:"cookie"`
 	RemoteAddr    string      `json:"remote_addr"`
+	Status        int         `json:"status"`
+	Message       string      `json:"message"`
 	CurlTemplate  string      `json:"curl_template"`
 	Source        interface{} `json:"source"`
 }
 
 type JsonLog struct {
-	Time     string      `json:"time"`
-	Level    string      `json:"level"`
-	Hostname string      `json:"hostname"`
-	Path     string      `json:"path"`
-	Source   interface{} `json:"source"`
+	RequestID string      `json:"request_id"`
+	Time      string      `json:"time"`
+	Level     string      `json:"level"`
+	Hostname  string      `json:"hostname"`
+	Path      string      `json:"path"`
+	Message   string      `json:"message"`
+	Source    interface{} `json:"source"`
 }
 
 type StringLog struct {
 	Time     string      `json:"time"`
 	Hostname string      `json:"hostname"`
 	Path     string      `json:"path"`
+	Message  string      `json:"message"`
 	Source   interface{} `json:"source"`
 }
 
@@ -158,8 +174,106 @@ func (s *JsonLog) SetSource(v interface{})   { s.Source = v }
 func (s *StringLog) GetSource() interface{}  { return s.Source }
 func (s *StringLog) SetSource(v interface{}) { s.Source = v }
 
+func (s *AccessLog) Finish() {
+	s.Time = formatTime(s.Time)
+	if s.Scheme == "" {
+		s.Scheme = "http"
+	}
+	if !strings.HasPrefix(s.URI, "http") {
+		s.URI = strings.Trim(s.URI, ":/")
+		s.URI = s.Scheme + "://" + s.URI
+	}
+	u, err := url.Parse(s.URI)
+	if err != nil {
+		return
+	}
+	s.HttpHost = u.Hostname()
+	s.Query = u.RawQuery
+	s.CurlTemplate = curlTemplate(s)
+}
+
+func curlTemplate(item *AccessLog) string {
+	isJSONString := func(s string) bool {
+		n := len(s)
+		if n <= 1 {
+			return false
+		}
+		s = strings.TrimSpace(s)
+		if s[0] == '{' && s[n-1] == '}' {
+			return gjson.Valid(s)
+		}
+		if s[0] == '[' && s[n-1] == ']' {
+			return gjson.Valid(s)
+		}
+		return false
+	}
+	removeLineEnd := func(s string) string {
+		return strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(s, "\r", ""), "\n", " "))
+	}
+	s := fmt.Sprintf("curl -v -X '%s' -H 'Host: %s' \\\n", item.Method, item.HttpHost)
+	switch item.Method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		var contentType string
+		if isJSONString(item.Body) {
+			contentType = " -H 'Content-Type: application/json' \\\n"
+		} else if strings.HasPrefix(item.Body, "<xml>") && strings.HasSuffix(item.Body, "</xml>") {
+			contentType = " -H 'Content-Type: application/xml' \\\n"
+		} else {
+			contentType = " -H 'Content-Type: application/x-www-form-urlencoded' \\\n"
+		}
+		s += contentType
+	}
+	if item.UserAgent != "" {
+		s += fmt.Sprintf(" -H 'User-Agent: %s' \\\n", removeLineEnd(item.UserAgent))
+	}
+	if item.Referer != "" {
+		s += fmt.Sprintf(" -H 'Referer: %s' \\\n", removeLineEnd(item.Referer))
+	}
+	if item.Cookie != "" {
+		s += fmt.Sprintf(" -H 'Cookie: %s' \\\n", removeLineEnd(item.Cookie))
+	}
+	if item.Body != "" {
+		s += fmt.Sprintf(" -d '%s' \\\n", removeLineEnd(item.Body))
+	}
+	query := ""
+	if item.Query != "" {
+		query += "?" + item.Query
+	}
+	u, err := url.Parse(item.URI)
+	if err != nil {
+		return ""
+	}
+	return s + fmt.Sprintf(` '#SCHEME#://#HOST#%s%s'`, u.Path, query)
+}
+
+func (s *JsonLog) Finish() {
+	s.Time = formatTime(s.Time)
+}
+
+func (s *StringLog) Finish() {
+	s.Time = formatTime(s.Time)
+}
+
 type LogItems []LogItem
 
 func (s LogItems) Len() int           { return len(s) }
 func (s LogItems) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s LogItems) Less(i, j int) bool { return s[i].Timestamp > s[j].Timestamp }
+
+func formatTime(s string) (res string) {
+	if strings.HasSuffix(s, "Z") || strings.Contains(s, "+") {
+		t, err := time.ParseInLocation(time.RFC3339, s, time.Local)
+		if err == nil {
+			return t.Format(time.RFC3339Nano)
+		}
+	}
+	t, err := time.Parse("2006-01-02 15:04:05.000", s)
+	if err == nil {
+		return t.Format(time.RFC3339Nano)
+	}
+	t, err = cast.ToTimeInDefaultLocationE(s, time.Local)
+	if err == nil {
+		return t.Format(time.RFC3339Nano)
+	}
+	return s
+}

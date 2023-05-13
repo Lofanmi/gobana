@@ -12,14 +12,6 @@ type SLSConfig struct {
 	SecurityToken   string `json:"security_token"`
 }
 
-type ClientType = string
-
-const (
-	ClientTypeElasticsearch ClientType = "elasticsearch"
-	ClientTypeKibanaProxy   ClientType = "kibana-proxy"
-	ClientTypeSLS           ClientType = "sls"
-)
-
 type BackendFactory interface {
 	GetBackendElastic(name string) (cli *elastic.Client, err error)
 	GetBackendSLS(name string) (cli sls.ClientInterface, err error)

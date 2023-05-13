@@ -1,4 +1,4 @@
-package config
+package logic_lua_state
 
 import (
 	"unsafe"

@@ -1,9 +1,12 @@
 package config
 
 import (
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
-	lua "github.com/yuin/gopher-lua"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/Lofanmi/gobana/internal/constant"
 )
 
 type Config struct {
@@ -28,10 +31,13 @@ type Backend struct {
 }
 
 type Auth struct {
+	Enabled         bool   `yaml:"enabled"`
 	Username        string `yaml:"username"`
 	Password        string `yaml:"password"`
+	KbnVersion      string `yaml:"kbn_version"`
 	AccessKeyID     string `yaml:"access_key_id"`
 	AccessKeySecret string `yaml:"access_key_secret"`
+	Cookie          string `yaml:"-"`
 }
 
 type MultiSearch struct {
@@ -65,29 +71,24 @@ type ParserFields struct {
 	StringLog []ParserField `yaml:"string_log"`
 }
 
-type (
-	ParserFieldType   = string
-	ParserFieldReturn = string
-)
-
-const (
-	ParserFieldTypeReplacements ParserFieldType = "replacements"
-	ParserFieldTypeLua          ParserFieldType = "lua"
-
-	ParserFieldReturnString ParserFieldReturn = "string"
-	ParserFieldReturnNumber ParserFieldReturn = "number"
-)
-
 type ParserField struct {
 	Name       string   `yaml:"name"`
 	Type       string   `yaml:"type"`
 	FromFields []string `yaml:"from_field"`
 	ToField    string   `yaml:"to_field"`
-	Lua        struct {
-		LogType string `yaml:"log_type"`
-		Field   string `yaml:"field"`
-	} `yaml:"lua"`
-	Return string `yaml:"return"`
+	TrimSet    string   `yaml:"trim_set"`
+	LuaField   string   `yaml:"lua_field"`
+	LuaReturn  string   `yaml:"lua_return"`
+}
+
+type kibanaAuth struct {
+	ProviderType string `json:"providerType"`
+	ProviderName string `json:"providerName"`
+	CurrentURL   string `json:"currentURL"`
+	Params       struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	} `json:"params"`
 }
 
 func (s *Backend) Default() {
@@ -95,6 +96,49 @@ func (s *Backend) Default() {
 		s.Timeout = 60 * 1000
 	}
 	s.ParserFields.Default()
+	s.authIfNeeded()
+}
+
+func (s *Backend) authIfNeeded() {
+	var err error
+	defer func() {
+		if err != nil {
+			panic(err)
+		}
+	}()
+	if !s.Auth.Enabled {
+		return
+	}
+	if s.Type != constant.ClientTypeKibanaProxy {
+		return
+	}
+	if s.Auth.Cookie != "" {
+		return
+	}
+	var auth kibanaAuth
+	auth.ProviderType = "basic"
+	auth.ProviderName = "basic"
+	auth.CurrentURL = s.Addr + "/login?next=%2Fapp%2Fdiscover#/"
+	auth.Params.Username = s.Auth.Username
+	auth.Params.Password = s.Auth.Password
+	var data []byte
+	if data, err = json.Marshal(&auth); err != nil {
+		return
+	}
+	var request *http.Request
+	if request, err = http.NewRequest(http.MethodPost, s.Addr+"/internal/security/login", bytes.NewReader(data)); err != nil {
+		return
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("kbn-version", s.Auth.KbnVersion)
+	var response *http.Response
+	if response, err = http.DefaultClient.Do(request); err != nil {
+		return
+	}
+	defer func() { _ = response.Body.Close() }()
+	for _, cookie := range response.Cookies() {
+		s.Auth.Cookie = fmt.Sprintf("%s=%s", cookie.Name, cookie.Value)
+	}
 }
 
 func (s *BackendList) Default() {
@@ -131,59 +175,4 @@ func (s *ParserFields) Default() {
 }
 
 func (s *ParserField) Default() {
-}
-
-func (s *ParserField) Handle(g gjson.Result, targetJSON *string, tb *lua.LTable) {
-	switch s.Type {
-	case ParserFieldTypeReplacements:
-		for _, fromField := range s.FromFields {
-			value := g.Get(fromField).String()
-			if value == "" {
-				continue
-			}
-			if newValue, err := sjson.Set(*targetJSON, s.ToField, value); err == nil {
-				*targetJSON = newValue
-			}
-		}
-	case ParserFieldTypeLua:
-		L, fn := GetLuaState()
-		defer fn()
-		for _, fromField := range s.FromFields {
-			value := g.Get(fromField).String()
-			if value == "" {
-				continue
-			}
-			if err := L.DoString(s.Lua.Field); err != nil {
-				continue
-			}
-			if err := L.CallByParam(lua.P{Fn: L.GetGlobal("parse_field"), NRet: 2, Protect: true}, lua.LString(value), tb); err != nil {
-				continue
-			}
-			ret, errString := L.Get(-2), L.Get(-1)
-			L.Pop(2)
-			if errString.String() != "" {
-				continue
-			}
-			var newValue interface{}
-			switch s.Return {
-			case ParserFieldReturnString:
-				if res, ok := ret.(lua.LString); !ok {
-					continue
-				} else {
-					newValue = string(res)
-				}
-			case ParserFieldReturnNumber:
-				if res, ok := ret.(lua.LNumber); !ok {
-					continue
-				} else {
-					newValue = float64(res)
-				}
-			default:
-				continue
-			}
-			if newJSON, err := sjson.Set(*targetJSON, s.ToField, newValue); err == nil {
-				*targetJSON = newJSON
-			}
-		}
-	}
 }
