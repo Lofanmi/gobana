@@ -44,7 +44,7 @@ type Auth struct {
 	KbnVersion      string `yaml:"kbn_version"`
 	AccessKeyID     string `yaml:"access_key_id"`
 	AccessKeySecret string `yaml:"access_key_secret"`
-	Cookie          string `yaml:"-"`
+	Cookie          string `yaml:"cookie"`
 }
 
 type MultiSearch struct {
