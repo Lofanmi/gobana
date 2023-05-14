@@ -12,6 +12,7 @@ import (
 	"github.com/Lofanmi/gobana/internal/gotil"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
+	lua_json "github.com/layeh/gopher-json"
 	"github.com/olivere/elastic/v7"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -44,10 +45,13 @@ func (s *LogParser) ParseElastic(backend config.Backend, m map[string]*elastic.S
 			tb := gotil.MapToTable(hitMap)
 			var logInterface interface{}
 			logTime := ""
-			logType, _source, e := s.parseLogType(backend, tb)
-			_sourceTable, ok := _source.(*lua.LTable)
-			if !ok {
-				continue
+			logType, _sourceTable, _sourceString, e := s.parseLogType(backend, tb)
+			if _sourceString != "" {
+				data = []byte(_sourceString)
+				if err = json.Unmarshal(data, &hitMap); err != nil {
+					return
+				}
+				tb = gotil.MapToTable(hitMap)
 			}
 			switch logType {
 			case service.LogTypeAccessLog:
@@ -88,24 +92,39 @@ func (s *LogParser) parseElasticTotal(m map[string]*elastic.SearchResult) (total
 	return
 }
 
-func (s *LogParser) parseLogType(backend config.Backend, tb *lua.LTable) (logType service.LogType, _source lua.LValue, err error) {
+func (s *LogParser) parseLogType(backend config.Backend, tb *lua.LTable) (logType service.LogType, _sourceTable *lua.LTable, _sourceString string, err error) {
 	L, fn := s.LuaState.GetLuaState()
+	lua_json.Preload(L)
 	defer fn()
 	if err = L.DoString(backend.ParserLogType); err != nil {
 		return
 	}
-	if err = L.CallByParam(lua.P{Fn: L.GetGlobal("parse_log_type"), NRet: 3, Protect: true}, tb); err != nil {
+	if err = L.CallByParam(lua.P{Fn: L.GetGlobal("parse_log_type"), NRet: 4, Protect: true}, tb); err != nil {
 		return
 	}
-	ret, _source, errString := L.Get(-3), L.Get(-2), L.Get(-1)
+	logTypeRet, _sourceRet, _sourceJsonRet, errString := L.Get(-4), L.Get(-3), L.Get(-2), L.Get(-1)
 	L.Pop(3)
 	if errString.String() != "" {
+		err = errors.New(errString.String())
 		return
 	}
-	if res, ok := ret.(lua.LString); !ok {
-		err = errors.New("ret.(lua.LString) -> !ok")
+	if res, ok := logTypeRet.(lua.LString); !ok {
+		err = errors.New("logTypeRet.(lua.LString) -> !ok")
+		return
 	} else {
 		logType = service.LogType(res)
+	}
+	if res, ok := _sourceRet.(*lua.LTable); !ok {
+		err = errors.New("_sourceRet.(*lua.LTable) -> !ok")
+		return
+	} else {
+		_sourceTable = res
+	}
+	if res, ok := _sourceJsonRet.(lua.LString); !ok {
+		err = errors.New("_sourceJsonRet.(lua.LString) -> !ok")
+		return
+	} else {
+		_sourceString = string(res)
 	}
 	return
 }
@@ -142,6 +161,7 @@ func handleParserField(parser *LogParser, field *config.ParserField, g gjson.Res
 		}
 	case constant.ParserFieldTypeLua:
 		L, fn := parser.LuaState.GetLuaState()
+		lua_json.Preload(L)
 		defer fn()
 		for _, fromField := range field.FromFields {
 			value := g.Get(fromField).String()

@@ -8,11 +8,15 @@ package inject
 import (
 	"github.com/google/wire"
 
+	"github.com/Lofanmi/gobana/internal/svc_impls/svc_config"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_logger"
 	"github.com/Lofanmi/gobana/service"
 )
 
 var ServiceSet = wire.NewSet(
+	wire.Struct(new(svc_config.Service), "*"),
+	wire.Bind(new(service.Config), new(*svc_config.Service)),
+
 	wire.Struct(new(svc_logger.Service), "*"),
 	wire.Bind(new(service.Logger), new(*svc_logger.Service)),
 )

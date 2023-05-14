@@ -23,9 +23,15 @@ func GetConfig() Config {
 	return config
 }
 
-// GetBackendList
+// GetConfigApplication
 // @autowire(set=config)
-func GetBackendList() BackendList {
+func GetConfigApplication() Application {
+	return GetConfig().Application
+}
+
+// GetConfigBackendList
+// @autowire(set=config)
+func GetConfigBackendList() BackendList {
 	list := GetConfig().BackendList
 	list.Default()
 	return list

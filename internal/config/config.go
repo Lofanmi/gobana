@@ -10,13 +10,20 @@ import (
 )
 
 type Config struct {
+	Application Application `yaml:"application"`
 	BackendList BackendList `yaml:"backend_list"`
+}
+
+type Application struct {
+	Production bool   `yaml:"production"`
+	ListenAddr string `yaml:"listen_addr"`
 }
 
 type BackendList []Backend
 
 type Backend struct {
 	Name           string                  `yaml:"name"`
+	Enabled        bool                    `yaml:"enabled"`
 	Type           string                  `yaml:"type"`
 	Addr           string                  `yaml:"addr"`
 	Auth           Auth                    `yaml:"auth"`
@@ -41,6 +48,8 @@ type Auth struct {
 }
 
 type MultiSearch struct {
+	Name         string   `yaml:"name"`
+	Order        int      `yaml:"order"`
 	IndexList    []string `yaml:"index_list"`
 	Project      string   `yaml:"project"`
 	LogStoreList []string `yaml:"log_store_list"`
@@ -90,6 +99,12 @@ type kibanaAuth struct {
 		Password string `json:"password"`
 	} `json:"params"`
 }
+
+type MultiSearchSlice []MultiSearch
+
+func (s MultiSearchSlice) Len() int           { return len(s) }
+func (s MultiSearchSlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s MultiSearchSlice) Less(i, j int) bool { return s[i].Order < s[j].Order }
 
 func (s *Backend) Default() {
 	if s.Timeout <= 0 {

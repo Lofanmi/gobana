@@ -106,6 +106,7 @@ type JsonLog struct {
 	Level     string      `json:"level"`
 	Hostname  string      `json:"hostname"`
 	Path      string      `json:"path"`
+	Tag       string      `json:"tag"`
 	Message   string      `json:"message"`
 	Source    interface{} `json:"source"`
 }
@@ -192,6 +193,43 @@ func (s *AccessLog) Finish() {
 	s.CurlTemplate = curlTemplate(s)
 }
 
+func (s *JsonLog) Finish() {
+	s.Time = formatTime(s.Time)
+	s.Level = strings.ToLower(s.Level)
+}
+
+func (s *StringLog) Finish() {
+	s.Time = formatTime(s.Time)
+}
+
+type LogItems []LogItem
+
+func (s LogItems) Len() int           { return len(s) }
+func (s LogItems) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s LogItems) Less(i, j int) bool { return s[i].Timestamp > s[j].Timestamp }
+
+func formatTime(s string) (res string) {
+	if strings.HasSuffix(s, "Z") || strings.Contains(s, "+") {
+		t, err := time.ParseInLocation(time.RFC3339, s, time.Local)
+		if err == nil {
+			return t.Format(time.RFC3339Nano)
+		}
+	}
+	t, err := time.Parse("2006-01-02 15:04:05.000000Z07:00", s)
+	if err == nil {
+		return t.Format(time.RFC3339Nano)
+	}
+	t, err = time.Parse("2006-01-02 15:04:05.000Z07:00", s)
+	if err == nil {
+		return t.Format(time.RFC3339Nano)
+	}
+	t, err = cast.ToTimeInDefaultLocationE(s, time.Local)
+	if err == nil {
+		return t.Format(time.RFC3339Nano)
+	}
+	return s
+}
+
 func curlTemplate(item *AccessLog) string {
 	isJSONString := func(s string) bool {
 		n := len(s)
@@ -244,36 +282,4 @@ func curlTemplate(item *AccessLog) string {
 		return ""
 	}
 	return s + fmt.Sprintf(` '#SCHEME#://#HOST#%s%s'`, u.Path, query)
-}
-
-func (s *JsonLog) Finish() {
-	s.Time = formatTime(s.Time)
-}
-
-func (s *StringLog) Finish() {
-	s.Time = formatTime(s.Time)
-}
-
-type LogItems []LogItem
-
-func (s LogItems) Len() int           { return len(s) }
-func (s LogItems) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s LogItems) Less(i, j int) bool { return s[i].Timestamp > s[j].Timestamp }
-
-func formatTime(s string) (res string) {
-	if strings.HasSuffix(s, "Z") || strings.Contains(s, "+") {
-		t, err := time.ParseInLocation(time.RFC3339, s, time.Local)
-		if err == nil {
-			return t.Format(time.RFC3339Nano)
-		}
-	}
-	t, err := time.Parse("2006-01-02 15:04:05.000", s)
-	if err == nil {
-		return t.Format(time.RFC3339Nano)
-	}
-	t, err = cast.ToTimeInDefaultLocationE(s, time.Local)
-	if err == nil {
-		return t.Format(time.RFC3339Nano)
-	}
-	return s
 }
