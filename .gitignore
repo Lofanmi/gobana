@@ -23,4 +23,4 @@ gobana
 *.bak
 *.lua
 config.yaml
-frontend
+frontend/node_modules/*
