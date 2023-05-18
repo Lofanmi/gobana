@@ -4,34 +4,34 @@
       <el-tab-pane label="快捷查询" name="快捷查询">
         <el-form :inline="true" label-width="150px">
           <el-form-item label="或者 [A || B || C]">
-            <el-input v-show="1 <= length" v-model="form.or1" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="2 <= length" v-model="form.or2" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="3 <= length" v-model="form.or3" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="4 <= length" v-model="form.or4" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="5 <= length" v-model="form.or5" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="6 <= length" v-model="form.or6" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="7 <= length" v-model="form.or7" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="8 <= length" v-model="form.or8" class="search-input" @keyup.enter.native="getList(1)" />
+            <el-input v-show="1 <= length" v-model="form.or1" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="2 <= length" v-model="form.or2" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="3 <= length" v-model="form.or3" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="4 <= length" v-model="form.or4" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="5 <= length" v-model="form.or5" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="6 <= length" v-model="form.or6" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="7 <= length" v-model="form.or7" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="8 <= length" v-model="form.or8" class="search-input" @keyup.enter.native="query(1)" />
           </el-form-item>
           <el-form-item label="并且 [A && B && C]">
-            <el-input v-show="1 <= length" v-model="form.must1" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="2 <= length" v-model="form.must2" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="3 <= length" v-model="form.must3" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="4 <= length" v-model="form.must4" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="5 <= length" v-model="form.must5" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="6 <= length" v-model="form.must6" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="7 <= length" v-model="form.must7" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="8 <= length" v-model="form.must8" class="search-input" @keyup.enter.native="getList(1)" />
+            <el-input v-show="1 <= length" v-model="form.must1" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="2 <= length" v-model="form.must2" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="3 <= length" v-model="form.must3" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="4 <= length" v-model="form.must4" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="5 <= length" v-model="form.must5" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="6 <= length" v-model="form.must6" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="7 <= length" v-model="form.must7" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="8 <= length" v-model="form.must8" class="search-input" @keyup.enter.native="query(1)" />
           </el-form-item>
           <el-form-item label="不包含 [!A && !B && !C]">
-            <el-input v-show="1 <= length" v-model="form.must_not1" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="2 <= length" v-model="form.must_not2" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="3 <= length" v-model="form.must_not3" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="4 <= length" v-model="form.must_not4" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="5 <= length" v-model="form.must_not5" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="6 <= length" v-model="form.must_not6" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="7 <= length" v-model="form.must_not7" class="search-input" @keyup.enter.native="getList(1)" />
-            <el-input v-show="8 <= length" v-model="form.must_not8" class="search-input" @keyup.enter.native="getList(1)" />
+            <el-input v-show="1 <= length" v-model="form.must_not1" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="2 <= length" v-model="form.must_not2" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="3 <= length" v-model="form.must_not3" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="4 <= length" v-model="form.must_not4" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="5 <= length" v-model="form.must_not5" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="6 <= length" v-model="form.must_not6" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="7 <= length" v-model="form.must_not7" class="search-input" @keyup.enter.native="query(1)" />
+            <el-input v-show="8 <= length" v-model="form.must_not8" class="search-input" @keyup.enter.native="query(1)" />
           </el-form-item>
         </el-form>
       </el-tab-pane>
@@ -51,12 +51,13 @@
 
         <el-date-picker v-model="timerange" type="datetimerange" start-placeholder="开始时间" end-placeholder="结束时间" :picker-options="picker_options" style="width: 324px" />
         <el-button-group>
-          <el-button @click="getList(1)">查询</el-button>
-          <el-button @click="getList(2)">最新</el-button>
+          <el-button @click="query(1)">查询</el-button>
+          <el-button @click="query(2)">最新</el-button>
         </el-button-group>
         <el-button-group>
-          <el-button @click="getList(3)">今日</el-button>
-          <el-button @click="getList(4)">昨日</el-button>
+          <el-button @click="query(3)">今天</el-button>
+          <el-button @click="query(4)">昨天</el-button>
+          <el-button @click="query(5)">前天</el-button>
         </el-button-group>
 
       </el-form-item>
@@ -67,12 +68,13 @@
 
 <script>
 import Vue from 'vue'
-import { lasthour, today, yesterday, lastday } from '@/utils/timeshortcut'
+import { lasthour, today, yesterday, lastday, dbyesterday } from '@/utils/timeshortcut'
 import { configGetBackendList, configGetStorageList } from '@/api/config'
 
 export default {
   data() {
     return {
+      screenWidth: 0,
       backend_name: '',
       backend_list: [],
       storage_name: '',
@@ -136,6 +138,9 @@ export default {
     }
   },
   computed: {
+    query_by() {
+      return this.activeName === '快捷查询' ? 'query_by_human' : 'query_by_query_string'
+    },
     or() {
       return [this.form.or1, this.form.or2, this.form.or3, this.form.or4, this.form.or5, this.form.or6, this.form.or7, this.form.or8].filter(i => !!i)
     },
@@ -146,7 +151,9 @@ export default {
       return [this.form.must_not1, this.form.must_not2, this.form.must_not3, this.form.must_not4, this.form.must_not5, this.form.must_not6, this.form.must_not7, this.form.must_not8].filter(i => !!i)
     },
     length() {
-      return 8
+      if (this.screenWidth >= 1600) return 8
+      if (this.screenWidth >= 1400) return 6
+      return 5
     }
   },
   watch: {
@@ -173,6 +180,14 @@ export default {
       }
     }
   },
+  mounted() {
+    this.screenWidth = document.body.clientWidth
+    window.onresize = () => {
+      return (() => {
+        this.screenWidth = document.body.clientWidth
+      })()
+    }
+  },
   async created() {
     const res = await configGetBackendList()
     if (res.code === 0) {
@@ -192,18 +207,36 @@ export default {
       Vue.set(this.timerange, 0, v[0])
       Vue.set(this.timerange, 1, v[1])
     },
-    async getList(button = 1) {
+    async query(button = 1) {
       switch (button) {
         case 2:
           await this.setTimeRange([this.timerange[0], new Date()])
           break
         case 3:
           await this.setTimeRange(today())
-          break
+          return
         case 4:
           await this.setTimeRange(yesterday())
-          break
+          return
+        case 5:
+          await this.setTimeRange(dbyesterday())
+          return
       }
+      this.$emit('query', {
+        button: button,
+        params: {
+          time_a: this.form.time_a,
+          time_b: this.form.time_b,
+          backend: this.backend_name,
+          storage: this.storage_name,
+          query_by: this.query_by,
+          query: {
+            or: this.or,
+            must: this.must,
+            must_not: this.must_not
+          }
+        }
+      })
     }
   }
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -141,17 +142,6 @@ type SearchChartsSeries struct {
 	Data   []int64 `json:"data" form:"data" query:"data"`
 }
 
-type SearchRequest2 struct {
-	PageNo   int         `json:"page_no"`
-	PageSize int         `json:"page_size"`
-	TimeA    int64       `json:"time_a"`
-	TimeB    int64       `json:"time_b"`
-	Backend  string      `json:"backend"`
-	Store    string      `json:"store"`
-	QueryBy  int         `json:"query_by"`
-	Query    interface{} `json:"query"`
-}
-
 type ExportRequest struct {
 	Size    int64       `json:"size"`
 	TimeA   int64       `json:"time_a"`
@@ -190,6 +180,7 @@ func (s *AccessLog) Finish() {
 	}
 	s.HttpHost = u.Hostname()
 	s.Query = u.RawQuery
+	s.Duration = formatDuration(s.Duration)
 	s.CurlTemplate = curlTemplate(s)
 }
 
@@ -228,6 +219,17 @@ func formatTime(s string) (res string) {
 		return t.Format(time.RFC3339Nano)
 	}
 	return s
+}
+
+func formatDuration(s string) (res string) {
+	duration, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		res = s
+		return
+	}
+	t := time.Duration(duration * float64(time.Second))
+	res = t.String()
+	return
 }
 
 func curlTemplate(item *AccessLog) string {

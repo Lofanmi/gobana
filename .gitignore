@@ -24,3 +24,4 @@ gobana
 *.lua
 config.yaml
 frontend/node_modules/*
+.DS_Store

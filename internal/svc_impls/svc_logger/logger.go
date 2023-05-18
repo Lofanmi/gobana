@@ -22,6 +22,8 @@ import (
 var _ service.Logger = &Service{}
 
 const (
+	defaultPageNo        = 1
+	defaultPageSize      = 20
 	defaultMaxPageSize   = 200
 	defaultMaxExportSize = 1000
 )
@@ -36,7 +38,13 @@ type Service struct {
 }
 
 func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp service.SearchResponse, err error) {
-	if req.PageSize <= 0 || req.PageSize > defaultMaxPageSize {
+	if req.PageNo <= 0 {
+		req.PageNo = defaultPageNo
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = defaultPageSize
+	}
+	if req.PageSize > defaultMaxPageSize {
 		req.PageSize = defaultMaxPageSize
 	}
 	if req.TimeA == 0 || req.TimeB == 0 {
@@ -44,11 +52,12 @@ func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp s
 		t1 := t2.Add(-time.Hour)
 		req.TimeA, req.TimeB = t1.UnixMilli(), t2.UnixMilli()
 	}
-	resp.PageNo = req.PageNo
-	resp.PageSize = req.PageSize
-	resp.TimeA = req.TimeA
-	resp.TimeB = req.TimeB
-
+	defer func() {
+		resp.PageNo = req.PageNo
+		resp.PageSize = req.PageSize
+		resp.TimeA = req.TimeA
+		resp.TimeB = req.TimeB
+	}()
 	backend := s.BackendListConfig.Match(req.Backend)
 	switch backend.Type {
 	case constant.ClientTypeElasticsearch:

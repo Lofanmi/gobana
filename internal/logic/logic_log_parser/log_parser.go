@@ -51,7 +51,6 @@ func (s *LogParser) ParseElastic(backend config.Backend, m map[string]*elastic.S
 				if err = json.Unmarshal(data, &hitMap); err != nil {
 					return
 				}
-				tb = gotil.MapToTable(hitMap)
 			}
 			switch logType {
 			case service.LogTypeAccessLog:

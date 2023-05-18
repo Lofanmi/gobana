@@ -1,6 +1,6 @@
 lint:
 	go fmt ./...
-	golangci-lint run ./... --skip-dirs="(docs|frontend)" --build-tags="!apitest"
+	golangci-lint run ./... --skip-dirs="(docs|frontend)"
 
 wire:
 	gutowire -w ./cmd/inject -p inject
