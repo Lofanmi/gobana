@@ -1,8 +1,8 @@
 <template>
   <div>
-    <el-tabs v-model="activeName">
-      <el-tab-pane label="快捷查询" name="快捷查询">
-        <el-form :inline="true" label-width="150px">
+    <el-tabs v-model="query_by">
+      <el-tab-pane label="快捷查询" name="query_by_human">
+        <el-form :inline="true" label-width="150px" @submit.native.prevent>
           <el-form-item label="或者 [A || B || C]">
             <el-input v-show="1 <= length" v-model="form.or1" class="search-input" @keyup.enter.native="query(1)" />
             <el-input v-show="2 <= length" v-model="form.or2" class="search-input" @keyup.enter.native="query(1)" />
@@ -35,12 +35,24 @@
           </el-form-item>
         </el-form>
       </el-tab-pane>
-      <el-tab-pane label="原生查询" name="second">
-        <el-button>原生查询（TODO）</el-button>
+      <el-tab-pane label="Lucene" name="query_by_lucene">
+        <div class="lucene-help">
+          <el-alert
+            title="Lucene 语法助手"
+            type="info"
+            :description="helper_lucene"
+            show-icon
+          />
+        </div>
+        <el-form :inline="false" label-width="150px" @submit.native.prevent>
+          <el-form-item label="Lucene">
+            <el-input v-model="form.lucene" @keyup.enter.native="query(1)" />
+          </el-form-item>
+        </el-form>
       </el-tab-pane>
     </el-tabs>
 
-    <el-form :inline="true" label-width="150px">
+    <el-form :inline="false" label-width="150px" @submit.native.prevent>
       <el-form-item label="后端">
         <el-select v-model="backend_name" default-first-option placeholder="请选择后端" class="search-input">
           <el-option v-for="item in backend_list" :key="item.value" :value="item.value" :label="item.label" />
@@ -59,8 +71,12 @@
           <el-button @click="query(4)">昨天</el-button>
           <el-button @click="query(5)">前天</el-button>
         </el-button-group>
-
       </el-form-item>
+
+      <el-form-item label="选项">
+        <el-checkbox v-model="form.track_total_hits" size="mini">统计日志总数</el-checkbox>
+      </el-form-item>
+
     </el-form>
 
   </div>
@@ -79,13 +95,14 @@ export default {
       backend_list: [],
       storage_name: '',
       storage_list: [],
-      activeName: '快捷查询',
+      query_by: 'query_by_lucene',
       timerange: [],
       form: {
         or1: '', or2: '', or3: '', or4: '', or5: '', or6: '', or7: '', or8: '',
         must1: '', must2: '', must3: '', must4: '', must5: '', must7: '', must6: '', must8: '',
         must_not1: '', must_not2: '', must_not3: '', must_not4: '', must_not5: '', must_not6: '', must_not7: '', must_not8: '',
-        time_a: 0, time_b: 0
+        time_a: 0, time_b: 0,
+        lucene: '', track_total_hits: false
       },
       picker_options: {
         shortcuts: [{
@@ -134,13 +151,11 @@ export default {
             picker.$emit('pick', lastday(7))
           }
         }]
-      }
+      },
+      helper_lucene: 'message:ok AND grade:(60,80] AND NOT error'
     }
   },
   computed: {
-    query_by() {
-      return this.activeName === '快捷查询' ? 'query_by_human' : 'query_by_query_string'
-    },
     or() {
       return [this.form.or1, this.form.or2, this.form.or3, this.form.or4, this.form.or5, this.form.or6, this.form.or7, this.form.or8].filter(i => !!i)
     },
@@ -149,6 +164,23 @@ export default {
     },
     must_not() {
       return [this.form.must_not1, this.form.must_not2, this.form.must_not3, this.form.must_not4, this.form.must_not5, this.form.must_not6, this.form.must_not7, this.form.must_not8].filter(i => !!i)
+    },
+    queryParams() {
+      if (this.query_by === 'query_by_human') {
+        return {
+          or: this.or,
+          must: this.must,
+          must_not: this.must_not,
+          track_total_hits: this.form.track_total_hits
+        }
+      }
+      if (this.query_by === 'query_by_lucene') {
+        return {
+          lucene: this.form.lucene,
+          track_total_hits: this.form.track_total_hits
+        }
+      }
+      return {}
     },
     length() {
       if (this.screenWidth >= 1600) return 8
@@ -230,11 +262,7 @@ export default {
           backend: this.backend_name,
           storage: this.storage_name,
           query_by: this.query_by,
-          query: {
-            or: this.or,
-            must: this.must,
-            must_not: this.must_not
-          }
+          query: this.queryParams
         }
       })
     }
@@ -253,6 +281,9 @@ export default {
   .el-input--mini .el-input__inner {
     padding: 0 10px;
   }
+  .el-checkbox__label {
+    font-size: 12px !important;
+  }
 }
 </style>
 
@@ -262,5 +293,8 @@ export default {
 }
 .search-input {
   width: 160px;
+}
+.lucene-help {
+  margin: 0 0 10px 0;
 }
 </style>

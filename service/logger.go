@@ -21,8 +21,8 @@ type Logger interface {
 type QueryType = string
 
 const (
-	QueryTypeByHuman       QueryType = "query_by_human"
-	QueryTypeByQueryString QueryType = "query_by_query_string"
+	QueryTypeByHuman  QueryType = "query_by_human"
+	QueryTypeByLucene QueryType = "query_by_lucene"
 )
 
 type QueryByHuman struct {
@@ -32,8 +32,8 @@ type QueryByHuman struct {
 	TrackTotalHits bool     `json:"track_total_hits"`
 }
 
-type QueryByQueryString struct {
-	QueryString    string `json:"query_string"`
+type QueryByLucene struct {
+	Lucene         string `json:"lucene"`
 	TrackTotalHits bool   `json:"track_total_hits"`
 }
 

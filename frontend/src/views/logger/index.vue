@@ -208,7 +208,7 @@ export default {
         } else {
           body = JSON.stringify(this.parseQueryString('?' + row.log.body), null, 2)
         }
-        return `URI:\n${uri}\n\nquery to JSON:\n${query}\n\nbody to JSON:\n${body}\n${row.log.message}`
+        return `URI:\n${uri}\n\nquery to JSON:\n${query}\n\nbody to JSON:\n${body}\n\n${row.log.message}`
       }
       const message = JSON.parse(row.log.message)
       return JSON.stringify(message, null, 2)

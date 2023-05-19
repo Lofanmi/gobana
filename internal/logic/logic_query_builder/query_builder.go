@@ -33,13 +33,13 @@ func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.Se
 		}
 		trackTotalHits = q.TrackTotalHits
 		queries = s.queryByHuman(backend, req, q)
-	case service.QueryTypeByQueryString:
-		var q service.QueryByQueryString
+	case service.QueryTypeByLucene:
+		var q service.QueryByLucene
 		if err = json.Unmarshal(data, &q); err != nil {
 			return
 		}
 		trackTotalHits = q.TrackTotalHits
-		queries = s.queryByQueryString(backend, req, q)
+		queries = s.queryByLucene(backend, req, q)
 	}
 	return
 }
@@ -85,8 +85,23 @@ func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRe
 	return
 }
 
-func (s *QueryBuilder) queryByQueryString(backend config.Backend, req service.SearchRequest, query service.QueryByQueryString) (queries map[string]elastic.Query) {
-	return nil
+func (s *QueryBuilder) queryByLucene(backend config.Backend, req service.SearchRequest, query service.QueryByLucene) (queries map[string]elastic.Query) {
+	if len(query.Lucene) <= 0 {
+		return
+	}
+	queries = map[string]elastic.Query{}
+	indexList := backend.MultiSearch[req.Storage].IndexList
+	for _, index := range indexList {
+		timeField, ok := backend.TimeField[index]
+		if !ok {
+			timeField = backend.TimeField[constant.DefaultValue]
+		}
+		esMainQuery := elastic.NewBoolQuery()
+		TimeQuery(gotil.IfElse(len(timeField) > 0, timeField, constant.AtTimestamp), req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Filter(query) })
+		esMainQuery.Filter(elastic.NewQueryStringQuery(query.Lucene))
+		queries[index] = esMainQuery
+	}
+	return
 }
 
 func MustOrMustNotBuildInQueryEntry(items []config.BuildInQueryEntry, fn func(query elastic.Query)) {
