@@ -1,8 +1,9 @@
 package constant
 
 const (
-	AtTimestamp  = "@timestamp"
-	DefaultValue = "default_value"
+	AtTimestamp    = "@timestamp"
+	DefaultValue   = "default_value"
+	MaxChartPoints = 60
 )
 
 type ClientType = string

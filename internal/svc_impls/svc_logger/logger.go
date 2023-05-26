@@ -52,6 +52,9 @@ func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp s
 		t1 := t2.Add(-time.Hour)
 		req.TimeA, req.TimeB = t1.UnixMilli(), t2.UnixMilli()
 	}
+	if req.ChartVisible && req.ChartInterval <= 0 {
+		req.ChartInterval = int32(defaultInterval(req.TimeA, req.TimeB))
+	}
 	defer func() {
 		resp.PageNo = req.PageNo
 		resp.PageSize = req.PageSize
@@ -79,13 +82,13 @@ func (s *Service) searchByElastic(ctx context.Context, backend config.Backend, r
 
 	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*time.Duration(backend.Timeout))
 	defer cancel()
-	m, rawQuery, trackTotalHits, err := s.elasticSearchResult(ctx, cli, backend, req)
+	m, rawQuery, err := s.elasticSearchResult(ctx, cli, backend, req)
 	if err != nil {
 		return
 	}
 	resp.RawQuery = rawQuery
 	resp.Count, resp.List, err = s.LogParser.ParseElastic(backend, m)
-	if !trackTotalHits {
+	if !req.TrackTotalHits {
 		resp.Count = 10000
 	}
 	return
@@ -99,10 +102,9 @@ func (s *Service) elasticSearchResult(
 ) (
 	m map[string]*elastic.SearchResult,
 	rawQuery map[string]interface{},
-	trackTotalHits bool,
 	err error,
 ) {
-	queries, trackTotalHits, err := s.QueryBuilder.SearchQueryElastic(backend, req)
+	queries, aggregations, err := s.QueryBuilder.SearchQueryElastic(backend, req)
 	wg := new(sync.WaitGroup)
 	mu := new(sync.RWMutex)
 	m = map[string]*elastic.SearchResult{}
@@ -112,13 +114,17 @@ func (s *Service) elasticSearchResult(
 		if !ok {
 			_sortFields = backend.SortFields[constant.DefaultValue]
 		}
+		_aggregation := aggregations[_index]
 		rawQuery[_index], _ = _query.Source()
 		wg.Add(1)
-		go func(index string, query elastic.Query, sortFields []config.SortField) {
+		go func(index string, query elastic.Query, aggregation elastic.Aggregation, sortFields []config.SortField) {
 			defer wg.Done()
 			search := cli.Search()
-			search.Index(index).TrackTotalHits(trackTotalHits).Query(query).Pretty(false).Version(true)
+			search.Index(index).TrackTotalHits(req.TrackTotalHits).Query(query).Pretty(false).Version(true)
 			search.From((req.PageNo - 1) * req.PageSize).Size(req.PageSize)
+			if aggregation != nil {
+				search.Aggregation("charts", aggregation)
+			}
 			for _, sortField := range sortFields {
 				search.Sort(sortField.Field, sortField.Ascending)
 			}
@@ -128,7 +134,7 @@ func (s *Service) elasticSearchResult(
 				m[index] = result
 				mu.Unlock()
 			}
-		}(_index, _query, _sortFields)
+		}(_index, _query, _aggregation, _sortFields)
 	}
 	wg.Wait()
 	return
@@ -183,5 +189,37 @@ func (s *Service) searchBySLS(ctx context.Context, backend config.Backend, req s
 		return
 	}
 	_ = cli
+	return
+}
+
+func defaultInterval(timeA, timeB int64) (interval int) {
+	interval = (int)((timeB - timeA) / 1000 / constant.MaxChartPoints)
+	if interval <= 1 {
+		interval = 1
+	} else if interval <= 5 {
+		interval = 5
+	} else if interval <= 10 {
+		interval = 10
+	} else if interval <= 30 {
+		interval = 30
+	} else if interval <= 60 {
+		interval = 60
+	} else if interval <= 300 {
+		interval = 300
+	} else if interval <= 900 {
+		interval = 900
+	} else if interval <= 1800 {
+		interval = 1800
+	} else if interval <= 3600 {
+		interval = 3600
+	} else if interval <= 3600*3 {
+		interval = 3600 * 3
+	} else if interval <= 3600*9 {
+		interval = 3600 * 9
+	} else if interval <= 3600*12 {
+		interval = 3600 * 12
+	} else {
+		interval = 3600 * 24
+	}
 	return
 }

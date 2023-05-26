@@ -16,13 +16,6 @@ func ParseTime(s string) (timestamp int64) {
 	return
 }
 
-func IfElse[T any](condition bool, a, b T) T {
-	if condition {
-		return a
-	}
-	return b
-}
-
 func MapToTable(m map[string]interface{}) *lua.LTable {
 	resultTable := &lua.LTable{}
 	for key, element := range m {

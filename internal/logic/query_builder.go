@@ -7,5 +7,9 @@ import (
 )
 
 type QueryBuilder interface {
-	SearchQueryElastic(backend config.Backend, req service.SearchRequest) (query map[string]elastic.Query, trackTotalHits bool, err error)
+	SearchQueryElastic(backend config.Backend, req service.SearchRequest) (
+		queries map[string]elastic.Query,
+		aggregations map[string]elastic.Aggregation,
+		err error,
+	)
 }

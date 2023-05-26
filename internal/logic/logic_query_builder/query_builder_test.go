@@ -86,7 +86,7 @@ func TestQueryBuilder_SearchQueryElastic_QueryTypeByHuman(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &QueryBuilder{}
-			gotQueries, _, err := s.SearchQueryElastic(tt.args.backend, tt.args.req)
+			gotQueries, gotAggregations, err := s.SearchQueryElastic(tt.args.backend, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SearchQueryElastic() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -95,6 +95,11 @@ func TestQueryBuilder_SearchQueryElastic_QueryTypeByHuman(t *testing.T) {
 				m, _ := query.Source()
 				data, _ := json.MarshalIndent(&m, "", "    ")
 				t.Logf("%s:\n%s", index, string(data))
+				if v := gotAggregations[index]; v != nil {
+					m2, _ := v.Source()
+					data2, _ := json.MarshalIndent(&m2, "", "    ")
+					t.Logf("%s:\n%s", index, string(data2))
+				}
 			}
 		})
 	}
@@ -133,7 +138,7 @@ func TestQueryBuilder_SearchQueryElastic_QueryTypeByLucene(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &QueryBuilder{}
-			gotQueries, _, err := s.SearchQueryElastic(tt.args.backend, tt.args.req)
+			gotQueries, gotAggregations, err := s.SearchQueryElastic(tt.args.backend, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SearchQueryElastic() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -142,6 +147,11 @@ func TestQueryBuilder_SearchQueryElastic_QueryTypeByLucene(t *testing.T) {
 				m, _ := query.Source()
 				data, _ := json.MarshalIndent(&m, "", "    ")
 				t.Logf("%s:\n%s", index, string(data))
+				if v := gotAggregations[index]; v != nil {
+					m2, _ := v.Source()
+					data2, _ := json.MarshalIndent(&m2, "", "    ")
+					t.Logf("%s:\n%s", index, string(data2))
+				}
 			}
 		})
 	}

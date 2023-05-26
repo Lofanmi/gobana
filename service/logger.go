@@ -26,15 +26,13 @@ const (
 )
 
 type QueryByHuman struct {
-	Or             []string `json:"or"`
-	Must           []string `json:"must"`
-	MustNot        []string `json:"must_not"`
-	TrackTotalHits bool     `json:"track_total_hits"`
+	Or      []string `json:"or"`
+	Must    []string `json:"must"`
+	MustNot []string `json:"must_not"`
 }
 
 type QueryByLucene struct {
-	Lucene         string `json:"lucene"`
-	TrackTotalHits bool   `json:"track_total_hits"`
+	Lucene string `json:"lucene"`
 }
 
 type QueryBySLS struct {
@@ -43,24 +41,28 @@ type QueryBySLS struct {
 }
 
 type SearchRequest struct {
-	PageNo   int         `json:"page_no"`
-	PageSize int         `json:"page_size"`
-	TimeA    int64       `json:"time_a"`
-	TimeB    int64       `json:"time_b"`
-	Backend  string      `json:"backend"`
-	Storage  string      `json:"storage"`
-	QueryBy  string      `json:"query_by"`
-	Query    interface{} `json:"query"`
+	PageNo         int         `json:"page_no"`
+	PageSize       int         `json:"page_size"`
+	TimeA          int64       `json:"time_a"`
+	TimeB          int64       `json:"time_b"`
+	Backend        string      `json:"backend"`
+	Storage        string      `json:"storage"`
+	QueryBy        string      `json:"query_by"`
+	Query          interface{} `json:"query"`
+	ChartInterval  int32       `json:"chart_interval"`
+	ChartVisible   bool        `json:"chart_visible"`
+	TrackTotalHits bool        `json:"track_total_hits"`
 }
 
 type SearchResponse struct {
-	PageNo   int         `json:"page_no"`
-	PageSize int         `json:"page_size"`
-	TimeA    int64       `json:"time_a"`
-	TimeB    int64       `json:"time_b"`
-	Count    int         `json:"count"`
-	List     []LogItem   `json:"list"`
-	RawQuery interface{} `json:"raw_query"`
+	PageNo   int          `json:"page_no"`
+	PageSize int          `json:"page_size"`
+	TimeA    int64        `json:"time_a"`
+	TimeB    int64        `json:"time_b"`
+	Count    int          `json:"count"`
+	List     []LogItem    `json:"list"`
+	Charts   SearchCharts `json:"charts"`
+	RawQuery interface{}  `json:"raw_query"`
 }
 
 type LogType = string

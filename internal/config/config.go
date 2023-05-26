@@ -31,6 +31,7 @@ type Backend struct {
 	MultiSearch    map[string]MultiSearch  `yaml:"multi_search"`     // 多索引/日志存储查询
 	BuildInQueries map[string]BuildInQuery `yaml:"build_in_queries"` // 内置的快捷查询
 	TimeField      map[string]string       `yaml:"time_field"`       // 时间排序字段，ES默认为@timestamp。
+	Timezone       map[string]string       `yaml:"timezone"`         // 时区
 	DefaultFields  map[string][]string     `yaml:"default_fields"`   // 默认查询字段
 	SortFields     map[string][]SortField  `yaml:"sort_fields"`      // 字段排序
 	ParserLogType  string                  `yaml:"parser_log_type"`  // 日志类型解析器

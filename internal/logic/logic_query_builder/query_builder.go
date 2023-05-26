@@ -2,10 +2,10 @@ package logic_query_builder
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/Lofanmi/gobana/internal/config"
 	"github.com/Lofanmi/gobana/internal/constant"
-	"github.com/Lofanmi/gobana/internal/gotil"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
@@ -19,7 +19,11 @@ var (
 // @autowire(logic.QueryBuilder,set=logics)
 type QueryBuilder struct{}
 
-func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.SearchRequest) (queries map[string]elastic.Query, trackTotalHits bool, err error) {
+func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.SearchRequest) (
+	queries map[string]elastic.Query,
+	aggregations map[string]elastic.Aggregation,
+	err error,
+) {
 	var data []byte
 	data, err = json.Marshal(req.Query)
 	if err != nil {
@@ -31,37 +35,46 @@ func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.Se
 		if err = json.Unmarshal(data, &q); err != nil {
 			return
 		}
-		trackTotalHits = q.TrackTotalHits
-		queries = s.queryByHuman(backend, req, q)
+		queries, aggregations = s.queryByHuman(backend, req, q)
 	case service.QueryTypeByLucene:
 		var q service.QueryByLucene
 		if err = json.Unmarshal(data, &q); err != nil {
 			return
 		}
-		trackTotalHits = q.TrackTotalHits
-		queries = s.queryByLucene(backend, req, q)
+		queries, aggregations = s.queryByLucene(backend, req, q)
 	}
 	return
 }
 
-func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRequest, query service.QueryByHuman) (queries map[string]elastic.Query) {
+func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRequest, query service.QueryByHuman) (
+	queries map[string]elastic.Query,
+	aggregations map[string]elastic.Aggregation,
+) {
 	if len(query.Or) <= 0 && len(query.Must) <= 0 && len(query.MustNot) <= 0 {
 		return
 	}
 	queries = map[string]elastic.Query{}
+	aggregations = map[string]elastic.Aggregation{}
 	indexList := backend.MultiSearch[req.Storage].IndexList
 	for _, index := range indexList {
 		defaultFields, ok := backend.DefaultFields[index]
 		if !ok {
 			defaultFields = backend.DefaultFields[constant.DefaultValue]
 		}
-		timeField, ok := backend.TimeField[index]
-		if !ok {
+		timeField := backend.TimeField[index]
+		if timeField == "" {
 			timeField = backend.TimeField[constant.DefaultValue]
+		}
+		if timeField == "" {
+			timeField = constant.AtTimestamp
+		}
+		timezone := backend.Timezone[index]
+		if timezone == "" {
+			timezone = backend.Timezone[constant.DefaultValue]
 		}
 		esMainQuery := elastic.NewBoolQuery()
 		emptyCondition := true
-		TimeQuery(gotil.IfElse(len(timeField) > 0, timeField, constant.AtTimestamp), req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Must(query) })
+		TimeQuery(timeField, req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Must(query) })
 		OrQueries(defaultFields, query.Or, &emptyCondition, func(orQueries []elastic.Query) {
 			esMainQuery.Should(orQueries...).MinimumNumberShouldMatch(1)
 		})
@@ -81,25 +94,50 @@ func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRe
 			esMainQuery.Should(orQueries...).MinimumNumberShouldMatch(1)
 		})
 		queries[index] = esMainQuery
+		if req.ChartVisible {
+			aggregations[index] = elastic.NewDateHistogramAggregation().
+				Field(timeField).
+				FixedInterval(strconv.Itoa(int(req.ChartInterval)) + "s").
+				TimeZone(timezone).
+				MinDocCount(0)
+		}
 	}
 	return
 }
 
-func (s *QueryBuilder) queryByLucene(backend config.Backend, req service.SearchRequest, query service.QueryByLucene) (queries map[string]elastic.Query) {
+func (s *QueryBuilder) queryByLucene(backend config.Backend, req service.SearchRequest, query service.QueryByLucene) (
+	queries map[string]elastic.Query,
+	aggregations map[string]elastic.Aggregation,
+) {
 	if len(query.Lucene) <= 0 {
 		return
 	}
 	queries = map[string]elastic.Query{}
+	aggregations = map[string]elastic.Aggregation{}
 	indexList := backend.MultiSearch[req.Storage].IndexList
 	for _, index := range indexList {
-		timeField, ok := backend.TimeField[index]
-		if !ok {
+		timeField := backend.TimeField[index]
+		if timeField == "" {
 			timeField = backend.TimeField[constant.DefaultValue]
 		}
+		if timeField == "" {
+			timeField = constant.AtTimestamp
+		}
+		timezone := backend.Timezone[index]
+		if timezone == "" {
+			timezone = backend.Timezone[constant.DefaultValue]
+		}
 		esMainQuery := elastic.NewBoolQuery()
-		TimeQuery(gotil.IfElse(len(timeField) > 0, timeField, constant.AtTimestamp), req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Filter(query) })
+		TimeQuery(timeField, req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Filter(query) })
 		esMainQuery.Filter(elastic.NewQueryStringQuery(query.Lucene))
 		queries[index] = esMainQuery
+		if req.ChartVisible {
+			aggregations[index] = elastic.NewDateHistogramAggregation().
+				Field(timeField).
+				FixedInterval(strconv.Itoa(int(req.ChartInterval)) + "s").
+				TimeZone(timezone).
+				MinDocCount(0)
+		}
 	}
 	return
 }
