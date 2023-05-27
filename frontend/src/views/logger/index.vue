@@ -55,7 +55,7 @@
         </template>
       </el-table-column>
       <!-- time -->
-      <el-table-column prop="time" label="time" width="150" :formatter="timestampFormatter" />
+      <el-table-column prop="time" label="time" width="160" :formatter="timestampFormatter" />
       <!-- application/tag/path -->
       <el-table-column label="application/tag/path" width="150">
         <template slot-scope="scope">
