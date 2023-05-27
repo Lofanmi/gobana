@@ -22,6 +22,47 @@ export function deepClone(source) {
 }
 
 /**
+ * @param {Function} func
+ * @param {number} wait
+ * @param {boolean} immediate
+ * @return {*}
+ */
+export function debounce(func, wait, immediate) {
+  let timeout, args, context, timestamp, result
+
+  const later = function() {
+    // 据上一次触发时间间隔
+    const last = +new Date() - timestamp
+
+    // 上次被包装函数被调用时间间隔 last 小于设定时间间隔 wait
+    if (last < wait && last > 0) {
+      timeout = setTimeout(later, wait - last)
+    } else {
+      timeout = null
+      // 如果设定为immediate===true，因为开始边界已经调用过了此处无需调用
+      if (!immediate) {
+        result = func.apply(context, args)
+        if (!timeout) context = args = null
+      }
+    }
+  }
+
+  return function(...args) {
+    context = this
+    timestamp = +new Date()
+    const callNow = immediate && !timeout
+    // 如果延时不存在，重新设定延时
+    if (!timeout) timeout = setTimeout(later, wait)
+    if (callNow) {
+      result = func.apply(context, args)
+      context = args = null
+    }
+
+    return result
+  }
+}
+
+/**
  * date (adm_yy)
  * date('Y-m-d H:i:s')
  * @param {string} fmt
@@ -114,4 +155,43 @@ export function time33(str) {
     hash += (hash << 5) + str.charAt(i).charCodeAt()
   }
   return hash & 0x7fffffff
+}
+
+/**
+ * defaultInterval
+ * @param {Number} timeA 开始时间
+ * @param {Number} timeB 结束时间
+ * @returns 区间范围/秒
+ */
+export function defaultInterval(timeA, timeB) {
+  const maxChartPoints = 60
+  let interval = parseInt((timeB - timeA) * 0.001 / maxChartPoints)
+  if (interval <= 1) {
+    interval = 1
+  } else if (interval <= 5) {
+    interval = 5
+  } else if (interval <= 10) {
+    interval = 10
+  } else if (interval <= 30) {
+    interval = 30
+  } else if (interval <= 60) {
+    interval = 60
+  } else if (interval <= 300) {
+    interval = 300
+  } else if (interval <= 900) {
+    interval = 900
+  } else if (interval <= 1800) {
+    interval = 1800
+  } else if (interval <= 3600) {
+    interval = 3600
+  } else if (interval <= 3600 * 3) {
+    interval = 3600 * 3
+  } else if (interval <= 3600 * 9) {
+    interval = 3600 * 9
+  } else if (interval <= 3600 * 12) {
+    interval = 3600 * 12
+  } else {
+    interval = 3600 * 24
+  }
+  return interval
 }

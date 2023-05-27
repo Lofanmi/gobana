@@ -9,6 +9,7 @@ package inject
 import (
 	"github.com/Lofanmi/gobana/internal/app"
 	"github.com/Lofanmi/gobana/internal/config"
+	"github.com/Lofanmi/gobana/internal/logic/logic_aggregation_parser"
 	"github.com/Lofanmi/gobana/internal/logic/logic_backend_factory"
 	"github.com/Lofanmi/gobana/internal/logic/logic_log_parser"
 	"github.com/Lofanmi/gobana/internal/logic/logic_lua_state"
@@ -31,11 +32,13 @@ func NewApplication() (*app.Application, func(), error) {
 	logParser := &logic_log_parser.LogParser{
 		LuaState: luaState,
 	}
+	aggregationParser := &logic_aggregation_parser.AggregationParser{}
 	svc_loggerService := &svc_logger.Service{
 		BackendListConfig: backendList,
 		BackendFactory:    backendFactory,
 		QueryBuilder:      queryBuilder,
 		LogParser:         logParser,
+		AggregationParser: aggregationParser,
 	}
 	appApplication := &app.Application{
 		ConfigApplication: application,

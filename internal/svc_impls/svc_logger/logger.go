@@ -35,6 +35,7 @@ type Service struct {
 	BackendFactory    logic.BackendFactory
 	QueryBuilder      logic.QueryBuilder
 	LogParser         logic.LogParser
+	AggregationParser logic.AggregationParser
 }
 
 func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp service.SearchResponse, err error) {
@@ -79,6 +80,7 @@ func (s *Service) searchByElastic(ctx context.Context, backend config.Backend, r
 	if err != nil {
 		return
 	}
+	_ = cli
 
 	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*time.Duration(backend.Timeout))
 	defer cancel()
@@ -91,6 +93,23 @@ func (s *Service) searchByElastic(ctx context.Context, backend config.Backend, r
 	if !req.TrackTotalHits {
 		resp.Count = 10000
 	}
+	if req.ChartVisible {
+		xAxis, yAxis, e := s.AggregationParser.ParseElastic(req.TimeA, req.TimeB, int64(req.ChartInterval), m)
+		if e != nil {
+			err = e
+			return
+		}
+		resp.Charts.Legend = []string{"数量"}
+		resp.Charts.XAxis = xAxis
+		resp.Charts.Series.Name = "数量"
+		resp.Charts.Series.Type = "bar"
+		resp.Charts.Series.Symbol = "none"
+		resp.Charts.Series.Smooth = true
+		resp.Charts.Series.Data = yAxis
+		resp.Charts.Interval = int(req.ChartInterval)
+	}
+	// j := `{"legend":["数量"],"xAxis":["2023-05-27 12:15:30","2023-05-27 12:16:00","2023-05-27 12:16:30","2023-05-27 12:17:00","2023-05-27 12:17:30","2023-05-27 12:18:00","2023-05-27 12:18:30","2023-05-27 12:19:00","2023-05-27 12:19:30","2023-05-27 12:20:00","2023-05-27 12:20:30","2023-05-27 12:21:00","2023-05-27 12:21:30","2023-05-27 12:22:00","2023-05-27 12:22:30","2023-05-27 12:23:00","2023-05-27 12:23:30","2023-05-27 12:24:00","2023-05-27 12:24:30","2023-05-27 12:25:00","2023-05-27 12:25:30","2023-05-27 12:26:00","2023-05-27 12:26:30","2023-05-27 12:27:00","2023-05-27 12:27:30","2023-05-27 12:28:00","2023-05-27 12:28:30","2023-05-27 12:29:00","2023-05-27 12:29:30","2023-05-27 12:30:00","2023-05-27 12:30:30","2023-05-27 12:30:52"],"series":{"name":"数量","type":"bar","symbol":"none","smooth":true,"data":[6627,206698,212948,213350,209385,206785,207047,205412,205884,203345,208218,206624,205394,205020,207002,204303,205471,204193,206971,205409,207045,208982,211783,208243,209792,209676,212042,208018,212407,210004,214633,152472]},"interval":30}`
+	// _ = json.Unmarshal([]byte(j), &resp.Charts)
 	return
 }
 

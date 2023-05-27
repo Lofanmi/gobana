@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="width: 100%">
     <el-tabs v-model="query_by">
       <el-tab-pane label="快捷查询" name="query_by_human">
         <el-form :inline="true" label-width="150px" @submit.native.prevent>
@@ -74,20 +74,47 @@
       </el-form-item>
 
       <el-form-item label="选项">
+        <el-checkbox v-model="form.chart_visible" size="mini" @change="onChartVisibleChange">日志柱状图</el-checkbox>
         <el-checkbox v-model="form.track_total_hits" size="mini">统计日志总数</el-checkbox>
       </el-form-item>
 
     </el-form>
+
+    <div v-show="showCharts" class="chart" style="background-color: #ffffff; width: 100%">
+      <counter
+        id="line"
+        ref="counter"
+        v-loading="loading"
+        class="line"
+        :height="'160px'"
+        :width="'100%'"
+        :chartdata="charts"
+        @click-event="barClick"
+      />
+    </div>
 
   </div>
 </template>
 
 <script>
 import Vue from 'vue'
+import { defaultInterval } from '@/utils'
 import { lasthour, today, yesterday, lastday, dbyesterday } from '@/utils/timeshortcut'
 import { configGetBackendList, configGetStorageList } from '@/api/config'
+import Counter from './Counter.vue'
 
 export default {
+  components: { Counter },
+  props: {
+    loading: {
+      type: Boolean,
+      default: false
+    },
+    charts: {
+      type: Object,
+      default: null
+    }
+  },
   data() {
     return {
       screenWidth: 0,
@@ -95,14 +122,17 @@ export default {
       backend_list: [],
       storage_name: '',
       storage_list: [],
-      query_by: 'query_by_lucene',
+      query_by: 'query_by_human',
       timerange: [],
       form: {
         or1: '', or2: '', or3: '', or4: '', or5: '', or6: '', or7: '', or8: '',
         must1: '', must2: '', must3: '', must4: '', must5: '', must7: '', must6: '', must8: '',
         must_not1: '', must_not2: '', must_not3: '', must_not4: '', must_not5: '', must_not6: '', must_not7: '', must_not8: '',
         time_a: 0, time_b: 0,
-        lucene: '', track_total_hits: false
+        lucene: '',
+        chart_interval: 0,
+        chart_visible: true,
+        track_total_hits: true
       },
       picker_options: {
         shortcuts: [{
@@ -170,14 +200,12 @@ export default {
         return {
           or: this.or,
           must: this.must,
-          must_not: this.must_not,
-          track_total_hits: this.form.track_total_hits
+          must_not: this.must_not
         }
       }
       if (this.query_by === 'query_by_lucene') {
         return {
-          lucene: this.form.lucene,
-          track_total_hits: this.form.track_total_hits
+          lucene: this.form.lucene
         }
       }
       return {}
@@ -186,6 +214,9 @@ export default {
       if (this.screenWidth >= 1600) return 8
       if (this.screenWidth >= 1400) return 6
       return 5
+    },
+    showCharts() {
+      return this.form.chart_visible && this.charts.series && this.charts.series.data && this.charts.series.data.length > 0
     }
   },
   watch: {
@@ -198,8 +229,14 @@ export default {
     },
     form: {
       handler() {
+
       },
       deep: true
+    },
+    charts() {
+      this.$nextTick(() => {
+        this.$refs.counter.resizeChart()
+      })
     },
     async backend_name() {
       if (!this.backend_name) return
@@ -262,8 +299,24 @@ export default {
           backend: this.backend_name,
           storage: this.storage_name,
           query_by: this.query_by,
-          query: this.queryParams
+          query: this.queryParams,
+          chart_interval: defaultInterval(this.form.time_a, this.form.time_b),
+          chart_visible: this.form.chart_visible,
+          track_total_hits: this.form.track_total_hits
         }
+      })
+    },
+    async barClick(form) {
+      const a = new Date(form.name)
+      const b = new Date((+a) + this.charts.interval * 1000)
+      await this.setTimeRange([a, b])
+      this.form.time_a = +a
+      this.form.time_b = +b
+      await this.query()
+    },
+    onChartVisibleChange() {
+      this.$nextTick(() => {
+        this.$refs.counter.resizeChart()
       })
     }
   }

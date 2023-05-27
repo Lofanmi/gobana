@@ -7,6 +7,11 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
+func FormatMilliSecond(ts int64) (s string) {
+	s = time.UnixMilli(ts).Format("2006-01-02 15:04:05")
+	return
+}
+
 func ParseTime(s string) (timestamp int64) {
 	t, err := time.Parse(time.RFC3339Nano, s)
 	if err != nil {

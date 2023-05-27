@@ -9,6 +9,7 @@ import (
 	"github.com/google/wire"
 
 	"github.com/Lofanmi/gobana/internal/logic"
+	"github.com/Lofanmi/gobana/internal/logic/logic_aggregation_parser"
 	"github.com/Lofanmi/gobana/internal/logic/logic_backend_factory"
 	"github.com/Lofanmi/gobana/internal/logic/logic_log_parser"
 	"github.com/Lofanmi/gobana/internal/logic/logic_lua_state"
@@ -16,6 +17,9 @@ import (
 )
 
 var LogicsSet = wire.NewSet(
+	wire.Struct(new(logic_aggregation_parser.AggregationParser), "*"),
+	wire.Bind(new(logic.AggregationParser), new(*logic_aggregation_parser.AggregationParser)),
+
 	logic_backend_factory.NewBackendFactory,
 
 	wire.Struct(new(logic_log_parser.LogParser), "*"),

@@ -11,6 +11,7 @@ require (
 	github.com/spf13/cast v1.5.0
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
+	github.com/wangjia184/sortedset v0.0.0-20220209072355-af6d6d227aa7
 	github.com/yuin/gopher-lua v1.1.0
 	go.uber.org/zap v1.19.1
 	gopkg.in/yaml.v3 v3.0.1

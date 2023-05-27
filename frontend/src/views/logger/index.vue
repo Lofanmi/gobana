@@ -1,6 +1,6 @@
 <template>
   <div class="app-container logger-search">
-    <query @query="onQuery" />
+    <query :loading="loading" :charts="charts" style="width: 100%" @query="onQuery" />
 
     <el-table v-loading="loading" :data="list" :row-class-name="tableRowClassName" size="mini" style="width: 100%" highlight-current-row>
       <el-table-column type="expand">
@@ -172,7 +172,8 @@ export default {
       },
       lastQuery: null,
       detail: null,
-      dialog_visible: false
+      dialog_visible: false,
+      charts: {}
     }
   },
   watch: {
@@ -284,6 +285,7 @@ export default {
           this.form.page_size = res.data.page_size
           this.form.count = res.data.count
           this.list = res.data ? res.data.list : []
+          this.charts = res.data ? res.data.charts : []
         }
       } finally {
         this.loading = false
@@ -308,6 +310,8 @@ export default {
 
 <style lang="scss">
 .logger-search {
+  width: 100%;
+
   .el-table .cell {
     color: #333333 !important;
   }
