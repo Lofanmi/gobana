@@ -49,11 +49,9 @@ type Auth struct {
 }
 
 type MultiSearch struct {
-	Name         string   `yaml:"name"`
-	Order        int      `yaml:"order"`
-	IndexList    []string `yaml:"index_list"`
-	Project      string   `yaml:"project"`
-	LogStoreList []string `yaml:"log_store_list"`
+	Name      string   `yaml:"name"`
+	Order     int      `yaml:"order"`
+	IndexList []string `yaml:"index_list"`
 }
 
 type BuildInQuery struct {

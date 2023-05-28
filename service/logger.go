@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -21,8 +22,9 @@ type Logger interface {
 type QueryType = string
 
 const (
-	QueryTypeByHuman  QueryType = "query_by_human"
-	QueryTypeByLucene QueryType = "query_by_lucene"
+	QueryTypeByHuman    QueryType = "query_by_human"
+	QueryTypeByLucene   QueryType = "query_by_lucene"
+	QueryTypeBySLSQuery QueryType = "query_by_sls_query"
 )
 
 type QueryByHuman struct {
@@ -35,9 +37,8 @@ type QueryByLucene struct {
 	Lucene string `json:"lucene"`
 }
 
-type QueryBySLS struct {
-	SQL    string `json:"sql"`
-	Phrase string `json:"phrase"`
+type QueryBySLSQuery struct {
+	SQL string `json:"sql"`
 }
 
 type SearchRequest struct {
@@ -202,6 +203,14 @@ func (s LogItems) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s LogItems) Less(i, j int) bool { return s[i].Timestamp > s[j].Timestamp }
 
 func formatTime(s string) (res string) {
+	s = strings.TrimSpace(s)
+	if regexp.MustCompile(`^\d+$`).MatchString(s) {
+		i, _ := strconv.Atoi(s)
+		if len(s) == 10 {
+			i *= 1000
+		}
+		return time.UnixMilli(int64(i)).Format(time.RFC3339Nano)
+	}
 	if strings.HasSuffix(s, "Z") || strings.Contains(s, "+") {
 		t, err := time.ParseInLocation(time.RFC3339, s, time.Local)
 		if err == nil {

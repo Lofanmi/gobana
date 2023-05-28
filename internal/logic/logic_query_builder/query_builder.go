@@ -2,13 +2,16 @@ package logic_query_builder
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Lofanmi/gobana/internal/config"
 	"github.com/Lofanmi/gobana/internal/constant"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
+	"github.com/spf13/cast"
 )
 
 var (
@@ -35,18 +38,18 @@ func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.Se
 		if err = json.Unmarshal(data, &q); err != nil {
 			return
 		}
-		queries, aggregations = s.queryByHuman(backend, req, q)
+		queries, aggregations = s.queryByHumanElastic(backend, req, q)
 	case service.QueryTypeByLucene:
 		var q service.QueryByLucene
 		if err = json.Unmarshal(data, &q); err != nil {
 			return
 		}
-		queries, aggregations = s.queryByLucene(backend, req, q)
+		queries, aggregations = s.queryByLuceneElastic(backend, req, q)
 	}
 	return
 }
 
-func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRequest, query service.QueryByHuman) (
+func (s *QueryBuilder) queryByHumanElastic(backend config.Backend, req service.SearchRequest, query service.QueryByHuman) (
 	queries map[string]elastic.Query,
 	aggregations map[string]elastic.Aggregation,
 ) {
@@ -105,7 +108,7 @@ func (s *QueryBuilder) queryByHuman(backend config.Backend, req service.SearchRe
 	return
 }
 
-func (s *QueryBuilder) queryByLucene(backend config.Backend, req service.SearchRequest, query service.QueryByLucene) (
+func (s *QueryBuilder) queryByLuceneElastic(backend config.Backend, req service.SearchRequest, query service.QueryByLucene) (
 	queries map[string]elastic.Query,
 	aggregations map[string]elastic.Aggregation,
 ) {
@@ -212,4 +215,140 @@ func MustOrMustNotQueries(defaultFields, conditions []string, emptySearchHit *bo
 		fn(query)
 		*emptySearchHit = false
 	}
+}
+
+func (s *QueryBuilder) SearchQuerySLS(backend config.Backend, req service.SearchRequest) (
+	queries map[string]string,
+	err error,
+) {
+	var data []byte
+	data, err = json.Marshal(req.Query)
+	if err != nil {
+		return
+	}
+	switch req.QueryBy {
+	case service.QueryTypeByHuman:
+		var q service.QueryByHuman
+		if err = json.Unmarshal(data, &q); err != nil {
+			return
+		}
+		queries = s.queryByHumanSLS(backend, req, q)
+	case service.QueryTypeBySLSQuery:
+		var q service.QueryBySLSQuery
+		if err = json.Unmarshal(data, &q); err != nil {
+			return
+		}
+		queries = s.queryBySLSQuerySLS(backend, req, q)
+	}
+	return
+}
+
+func (s *QueryBuilder) queryByHumanSLS(backend config.Backend, req service.SearchRequest, query service.QueryByHuman) (
+	queries map[string]string,
+) {
+	if len(query.Or) <= 0 && len(query.Must) <= 0 && len(query.MustNot) <= 0 {
+		return
+	}
+	queries = map[string]string{}
+	indexList := backend.MultiSearch[req.Storage].IndexList
+	for _, index := range indexList {
+		defaultFields, ok := backend.DefaultFields[index]
+		if !ok {
+			defaultFields = backend.DefaultFields[constant.DefaultValue]
+		}
+		var merge []string
+		if q := AndOrNotQueries(defaultFields, query.Must, " AND ", false); q != "" {
+			merge = append(merge, q)
+		}
+		if q := AndOrNotQueries(defaultFields, query.Or, " OR ", false); q != "" {
+			merge = append(merge, q)
+		}
+		if q := AndOrNotQueries(defaultFields, query.MustNot, " AND ", true); q != "" {
+			merge = append(merge, q)
+		}
+		if len(merge) <= 0 {
+			continue
+		}
+		buildInQueries, ok := backend.BuildInQueries[index]
+		if !ok {
+			buildInQueries = backend.BuildInQueries[constant.DefaultValue]
+		}
+		if q := AndOrNotBuildInQueryEntry(buildInQueries.Must, " AND ", false); q != "" {
+			merge = append(merge, q)
+		}
+		if q := AndOrNotBuildInQueryEntry(buildInQueries.Or, " OR ", false); q != "" {
+			merge = append(merge, q)
+		}
+		if q := AndOrNotBuildInQueryEntry(buildInQueries.MustNot, " AND ", true); q != "" {
+			merge = append(merge, q)
+		}
+		queries[index] = strings.Join(merge, " AND ")
+	}
+	return
+}
+
+func AndOrNotQueries(fields, conditions []string, op string, not bool) string {
+	var quoteConditions []string
+	for _, condition := range conditions {
+		if condition != "" {
+			condition = strings.ReplaceAll(condition, `'`, `\'`)
+			quoteConditions = append(quoteConditions, condition)
+		}
+	}
+	if len(conditions) <= 0 {
+		return ""
+	}
+	var res []string
+	for _, field := range fields {
+		operator := op
+		if field != "__raw__" {
+			operator = " OR "
+		}
+		var subQueries []string
+		for _, condition := range quoteConditions {
+			if not {
+				subQueries = append(subQueries, fmt.Sprintf(`("%s" not like '%%%s%%')`, field, condition))
+			} else {
+				subQueries = append(subQueries, fmt.Sprintf(`"%s" like '%%%s%%'`, field, condition))
+			}
+		}
+		if len(subQueries) <= 0 {
+			continue
+		}
+		res = append(res, "("+strings.Join(subQueries, operator)+")")
+	}
+	if len(res) <= 0 {
+		return ""
+	}
+	return "(" + strings.Join(res, " OR ") + ")"
+}
+
+func AndOrNotBuildInQueryEntry(items []config.BuildInQueryEntry, op string, not bool) string {
+	var subQueries []string
+	for _, item := range items {
+		if !item.Always {
+			continue
+		}
+		if q := AndOrNotQueries([]string{item.Field}, cast.ToStringSlice(item.Values), op, not); q != "" {
+			subQueries = append(subQueries, q)
+		}
+	}
+	if len(subQueries) <= 0 {
+		return ""
+	}
+	return "(" + strings.Join(subQueries, " OR ") + ")"
+}
+
+func (s *QueryBuilder) queryBySLSQuerySLS(backend config.Backend, req service.SearchRequest, query service.QueryBySLSQuery) (
+	queries map[string]string,
+) {
+	if len(query.SQL) <= 0 {
+		return
+	}
+	queries = map[string]string{}
+	indexList := backend.MultiSearch[req.Storage].IndexList
+	for _, index := range indexList {
+		queries[index] = query.SQL
+	}
+	return
 }

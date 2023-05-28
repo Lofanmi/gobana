@@ -3,6 +3,7 @@ package svc_logger
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -15,6 +16,7 @@ import (
 	"github.com/Lofanmi/gobana/internal/constant"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/olivere/elastic/v7"
 	"github.com/olivere/elastic/v7/uritemplates"
 )
@@ -80,8 +82,6 @@ func (s *Service) searchByElastic(ctx context.Context, backend config.Backend, r
 	if err != nil {
 		return
 	}
-	_ = cli
-
 	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*time.Duration(backend.Timeout))
 	defer cancel()
 	m, rawQuery, err := s.elasticSearchResult(ctx, cli, backend, req)
@@ -108,8 +108,6 @@ func (s *Service) searchByElastic(ctx context.Context, backend config.Backend, r
 		resp.Charts.Series.Data = yAxis
 		resp.Charts.Interval = int(req.ChartInterval)
 	}
-	// j := `{"legend":["数量"],"xAxis":["2023-05-27 12:15:30","2023-05-27 12:16:00","2023-05-27 12:16:30","2023-05-27 12:17:00","2023-05-27 12:17:30","2023-05-27 12:18:00","2023-05-27 12:18:30","2023-05-27 12:19:00","2023-05-27 12:19:30","2023-05-27 12:20:00","2023-05-27 12:20:30","2023-05-27 12:21:00","2023-05-27 12:21:30","2023-05-27 12:22:00","2023-05-27 12:22:30","2023-05-27 12:23:00","2023-05-27 12:23:30","2023-05-27 12:24:00","2023-05-27 12:24:30","2023-05-27 12:25:00","2023-05-27 12:25:30","2023-05-27 12:26:00","2023-05-27 12:26:30","2023-05-27 12:27:00","2023-05-27 12:27:30","2023-05-27 12:28:00","2023-05-27 12:28:30","2023-05-27 12:29:00","2023-05-27 12:29:30","2023-05-27 12:30:00","2023-05-27 12:30:30","2023-05-27 12:30:52"],"series":{"name":"数量","type":"bar","symbol":"none","smooth":true,"data":[6627,206698,212948,213350,209385,206785,207047,205412,205884,203345,208218,206624,205394,205020,207002,204303,205471,204193,206971,205409,207045,208982,211783,208243,209792,209676,212042,208018,212407,210004,214633,152472]},"interval":30}`
-	// _ = json.Unmarshal([]byte(j), &resp.Charts)
 	return
 }
 
@@ -147,7 +145,7 @@ func (s *Service) elasticSearchResult(
 			for _, sortField := range sortFields {
 				search.Sort(sortField.Field, sortField.Ascending)
 			}
-			result, e := s.searchDo(ctx, backend, cli, search)
+			result, e := s.searchDoElastic(ctx, backend, cli, search)
 			if e == nil {
 				mu.Lock()
 				m[index] = result
@@ -159,7 +157,7 @@ func (s *Service) elasticSearchResult(
 	return
 }
 
-func (s *Service) searchDo(ctx context.Context, backend config.Backend, cli *elastic.Client, search *elastic.SearchService) (result *elastic.SearchResult, err error) {
+func (s *Service) searchDoElastic(ctx context.Context, backend config.Backend, cli *elastic.Client, search *elastic.SearchService) (result *elastic.SearchResult, err error) {
 	switch backend.Type {
 	case constant.ClientTypeElasticsearch:
 		result, err = search.Do(ctx)
@@ -207,7 +205,124 @@ func (s *Service) searchBySLS(ctx context.Context, backend config.Backend, req s
 	if err != nil {
 		return
 	}
-	_ = cli
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*time.Duration(backend.Timeout))
+	defer cancel()
+	m, rawQuery, err := s.slsSearchResult(ctx, cli, backend, req)
+	_ = m
+	if err != nil {
+		return
+	}
+	resp.RawQuery = rawQuery
+	resp.Count, resp.List, err = s.LogParser.ParseSLS(backend, m)
+	if req.ChartVisible {
+		xAxis, yAxis, e := s.AggregationParser.ParseSLS(req.TimeA, req.TimeB, int64(req.ChartInterval), m)
+		if e != nil {
+			err = e
+			return
+		}
+		resp.Charts.Legend = []string{"数量"}
+		resp.Charts.XAxis = xAxis
+		resp.Charts.Series.Name = "数量"
+		resp.Charts.Series.Type = "bar"
+		resp.Charts.Series.Symbol = "none"
+		resp.Charts.Series.Smooth = true
+		resp.Charts.Series.Data = yAxis
+		resp.Charts.Interval = int(req.ChartInterval)
+	}
+	return
+}
+
+func (s *Service) slsSearchResult(
+	ctx context.Context,
+	cli sls.ClientInterface,
+	backend config.Backend,
+	req service.SearchRequest,
+) (
+	m map[string]logic.SLSSearchResult,
+	rawQuery map[string]interface{},
+	err error,
+) {
+	queries, err := s.QueryBuilder.SearchQuerySLS(backend, req)
+	wg := new(sync.WaitGroup)
+	mu := new(sync.RWMutex)
+	m = map[string]logic.SLSSearchResult{}
+	rawQuery = map[string]interface{}{}
+	for _index, _query := range queries {
+		rawQuery[_index] = _query
+		wg.Add(1)
+		go func(index, query string) {
+			defer wg.Done()
+			result, e := s.searchDoSLS(ctx, backend, cli, req, index, query)
+			if e == nil {
+				mu.Lock()
+				m[index] = result
+				mu.Unlock()
+			}
+		}(_index, _query)
+	}
+	wg.Wait()
+	return
+}
+
+func (s *Service) searchDoSLS(
+	ctx context.Context,
+	backend config.Backend,
+	cli sls.ClientInterface,
+	req service.SearchRequest,
+	index, query string,
+) (result logic.SLSSearchResult, err error) {
+	_ = ctx
+	pieces := strings.Split(index, "|")
+	if len(pieces) != 2 {
+		return
+	}
+	project, store := pieces[0], pieces[1]
+	wg := new(sync.WaitGroup)
+	mu := new(sync.RWMutex)
+	from, to := req.TimeA/1000, req.TimeB/1000
+	offset, limit := (req.PageNo-1)*req.PageSize, req.PageSize
+	queryCount := fmt.Sprintf(`* | SELECT COUNT(*) as count FROM log WHERE %s`, query)
+	queryLog := fmt.Sprintf(`* | SELECT * FROM log WHERE %s ORDER BY __time__ DESC LIMIT %d, %d`, query, offset, limit)
+	queryAggregation := fmt.Sprintf(`* | SELECT * FROM log WHERE %s`, query)
+	powerSQL := false
+	switch backend.Type {
+	case constant.ClientTypeSLS:
+		if req.TrackTotalHits {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				resp, e := cli.GetLogsV2(project, store, &sls.GetLogRequest{From: from, To: to, Query: queryCount, PowerSQL: powerSQL})
+				if e == nil {
+					mu.Lock()
+					result.ResponseCount = resp
+					mu.Unlock()
+				}
+			}()
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			resp, e := cli.GetLogsV2(project, store, &sls.GetLogRequest{From: from, To: to, Query: queryLog, PowerSQL: powerSQL})
+			if e == nil {
+				mu.Lock()
+				result.ResponseLog = resp
+				mu.Unlock()
+			}
+		}()
+		if req.ChartVisible {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				resp, e := cli.GetHistograms(project, store, "", from, to, queryAggregation)
+				if e == nil {
+					mu.Lock()
+					result.ResponseAggregation = resp
+					mu.Unlock()
+				}
+			}()
+		}
+	}
+	wg.Wait()
 	return
 }
 

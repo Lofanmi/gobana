@@ -10,10 +10,11 @@ import (
 	"github.com/Lofanmi/gobana/internal/config"
 	"github.com/Lofanmi/gobana/internal/constant"
 	"github.com/Lofanmi/gobana/internal/gotil"
+	"github.com/Lofanmi/gobana/internal/gotil/lua_json"
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
-	lua_json "github.com/layeh/gopher-json"
 	"github.com/olivere/elastic/v7"
+	"github.com/spf13/cast"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	lua "github.com/yuin/gopher-lua"
@@ -38,43 +39,45 @@ func (s *LogParser) ParseElastic(backend config.Backend, m map[string]*elastic.S
 		}
 		for _, hit := range result.Hits.Hits {
 			data, _ := json.Marshal(hit)
-			hitMap := map[string]interface{}{}
-			if err = json.Unmarshal(data, &hitMap); err != nil {
+			var logItem service.LogItem
+			if logItem, err = s.parseLogBytes(backend, data); err != nil {
 				return
 			}
-			tb := gotil.MapToTable(hitMap)
-			var logInterface interface{}
-			logTime := ""
-			logType, _sourceTable, _sourceString, e := s.parseLogType(backend, tb)
-			if _sourceString != "" {
-				data = []byte(_sourceString)
-				if err = json.Unmarshal(data, &hitMap); err != nil {
-					return
+			logItem.Storage = hit.Index
+			logs = append(logs, logItem)
+		}
+	}
+	sort.Sort(logs)
+	return
+}
+
+func (s *LogParser) ParseSLS(backend config.Backend, m map[string]logic.SLSSearchResult) (total int, logs service.LogItems, err error) {
+	logs = make([]service.LogItem, 0, total)
+	for index, result := range m {
+		countRes, logRes := result.ResponseCount, result.ResponseLog
+		if logRes == nil || len(logRes.Logs) <= 0 {
+			continue
+		}
+		if countRes != nil && len(countRes.Logs) > 0 {
+			log := countRes.Logs[0]
+			total = cast.ToInt(log["count"])
+		} else {
+			total = 10000
+		}
+		for _, hit := range logRes.Logs {
+			for k, v := range hit {
+				if v == "" || v == "null" {
+					delete(hit, k)
 				}
 			}
-			switch logType {
-			case service.LogTypeAccessLog:
-				log := new(service.AccessLog)
-				_ = parseLog(s, backend.ParserFields.AccessLog, data, hitMap, _sourceTable, log)
-				logInterface, logTime = log, log.Time
-			case service.LogTypeJsonLog:
-				log := new(service.JsonLog)
-				_ = parseLog(s, backend.ParserFields.JsonLog, data, hitMap, _sourceTable, log)
-				logInterface, logTime = log, log.Time
-			case service.LogTypeStringLog:
-				log := new(service.StringLog)
-				_ = parseLog(s, backend.ParserFields.StringLog, data, hitMap, _sourceTable, log)
-				logInterface, logTime = log, log.Time
-			default:
-				_ = e
-				continue
+			hit["_index"] = index
+			data, _ := json.Marshal(hit)
+			var logItem service.LogItem
+			if logItem, err = s.parseLogBytes(backend, data); err != nil {
+				return
 			}
-			logs = append(logs, service.LogItem{
-				Timestamp: gotil.ParseTime(logTime),
-				Storage:   hit.Index,
-				LogType:   logType,
-				Log:       logInterface,
-			})
+			logItem.Storage = index
+			logs = append(logs, logItem)
 		}
 	}
 	sort.Sort(logs)
@@ -87,6 +90,50 @@ func (s *LogParser) parseElasticTotal(m map[string]*elastic.SearchResult) (total
 			continue
 		}
 		total += int(result.Hits.TotalHits.Value)
+	}
+	return
+}
+
+func (s *LogParser) parseLogBytes(backend config.Backend, data []byte) (logItem service.LogItem, err error) {
+	hitMap := map[string]interface{}{}
+	if err = json.Unmarshal(data, &hitMap); err != nil {
+		return
+	}
+	tb := gotil.MapToTable(hitMap)
+	var logInterface interface{}
+	logTime := ""
+	logType, _sourceTable, _sourceString, e := s.parseLogType(backend, tb)
+	if e != nil {
+		err = e
+		return
+	}
+	if _sourceString != "" {
+		data = []byte(_sourceString)
+		if err = json.Unmarshal(data, &hitMap); err != nil {
+			return
+		}
+	}
+	switch logType {
+	case service.LogTypeAccessLog:
+		log := new(service.AccessLog)
+		_ = parseLog(s, backend.ParserFields.AccessLog, data, hitMap, _sourceTable, log)
+		logInterface, logTime = log, log.Time
+	case service.LogTypeJsonLog:
+		log := new(service.JsonLog)
+		_ = parseLog(s, backend.ParserFields.JsonLog, data, hitMap, _sourceTable, log)
+		logInterface, logTime = log, log.Time
+	case service.LogTypeStringLog:
+		log := new(service.StringLog)
+		_ = parseLog(s, backend.ParserFields.StringLog, data, hitMap, _sourceTable, log)
+		logInterface, logTime = log, log.Time
+	default:
+		_ = e
+		return
+	}
+	logItem = service.LogItem{
+		Timestamp: gotil.ParseTime(logTime),
+		LogType:   logType,
+		Log:       logInterface,
 	}
 	return
 }

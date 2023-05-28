@@ -134,14 +134,7 @@ export function arrayChunk(arr, size) {
  * @returns 格式化后的数字
  */
 export function formatInteger(num, n, c = '0') {
-  const numStr = String(num)
-  var formatNum = (Array(n).join(c) + num).slice(-n)
-
-  if (numStr.length > formatNum) {
-    formatNum = numStr
-  }
-
-  return formatNum
+  return (Array(n).join(c) + String(num)).slice(-n)
 }
 
 /**

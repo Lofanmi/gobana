@@ -6,7 +6,6 @@ require (
 	github.com/aliyun/aliyun-log-go-sdk v0.1.44
 	github.com/gin-gonic/gin v1.9.0
 	github.com/google/wire v0.5.1-0.20220620021424-0675cdc9191c
-	github.com/layeh/gopher-json v0.0.0-20201124131017-552bb3c4c3bf
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/spf13/cast v1.5.0
 	github.com/tidwall/gjson v1.14.4

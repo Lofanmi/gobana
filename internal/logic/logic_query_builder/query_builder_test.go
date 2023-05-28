@@ -156,3 +156,13 @@ func TestQueryBuilder_SearchQueryElastic_QueryTypeByLucene(t *testing.T) {
 		})
 	}
 }
+
+func TestAndOrNotQueries(t *testing.T) {
+	fields := []string{"__raw__", "_pod_name_", "application"}
+	must := []string{"gaia", "sdk"}
+	op := " AND "
+	s := AndOrNotQueries(fields, must, op, false)
+	t.Log(s)
+	s2 := AndOrNotQueries(fields, must, op, true)
+	t.Log(s2)
+}

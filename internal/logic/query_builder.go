@@ -12,4 +12,8 @@ type QueryBuilder interface {
 		aggregations map[string]elastic.Aggregation,
 		err error,
 	)
+	SearchQuerySLS(backend config.Backend, req service.SearchRequest) (
+		queries map[string]string,
+		err error,
+	)
 }

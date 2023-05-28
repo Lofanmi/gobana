@@ -87,7 +87,6 @@ func (s *BackendFactory) getClient(config config.Backend) (res interface{}, err 
 				elastic.SetHttpClient(s.httpClient),
 				elastic.SetHealthcheck(false),
 				elastic.SetSniff(false),
-				// elastic.SetGzip(true),
 			)
 			if err != nil {
 				return
