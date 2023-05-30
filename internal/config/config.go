@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/Lofanmi/gobana/internal/constant"
+	"github.com/spf13/cast"
 )
 
 type Config struct {
@@ -55,10 +56,12 @@ type MultiSearch struct {
 }
 
 type BuildInQuery struct {
-	Must    []BuildInQueryEntry `yaml:"must"`
-	MustNot []BuildInQueryEntry `yaml:"must_not"`
-	Or      []BuildInQueryEntry `yaml:"or"`
+	Must    BuildInQueryEntrySlice `yaml:"must"`
+	MustNot BuildInQueryEntrySlice `yaml:"must_not"`
+	Or      BuildInQueryEntrySlice `yaml:"or"`
 }
+
+type BuildInQueryEntrySlice []BuildInQueryEntry
 
 type BuildInQueryEntry struct {
 	Name     string        `yaml:"name"`
@@ -189,4 +192,15 @@ func (s *ParserFields) Default() {
 }
 
 func (s *ParserField) Default() {
+}
+
+func (s *BuildInQueryEntrySlice) FieldConditions(fn func(field string, conditions []string) bool) {
+	for _, item := range *s {
+		if !item.Always {
+			continue
+		}
+		if !fn(item.Field, cast.ToStringSlice(item.Values)) {
+			break
+		}
+	}
 }

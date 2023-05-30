@@ -157,12 +157,33 @@ func TestQueryBuilder_SearchQueryElastic_QueryTypeByLucene(t *testing.T) {
 	}
 }
 
-func TestAndOrNotQueries(t *testing.T) {
-	fields := []string{"__raw__", "_pod_name_", "application"}
-	must := []string{"gaia", "sdk"}
-	op := " AND "
-	s := AndOrNotQueries(fields, must, op, false)
-	t.Log(s)
-	s2 := AndOrNotQueries(fields, must, op, true)
-	t.Log(s2)
+func TestSlsMainQuery(t *testing.T) {
+	var mainQuery *slsQuery
+
+	mainQuery = new(slsQuery)
+	t.Log(mainQuery)
+
+	fields := []string{"application", "client_ip", "content"}
+	conditions := []string{"%gaia%", "%timer%", "sdk", "login"}
+
+	mainQuery = new(slsQuery)
+	searchConditions, fuzzyConditions := quoteConditions(conditions)
+	mainQuery.PrepareSearchConditions(searchConditions, operatorAnd, false)
+	mainQuery.PrepareFuzzyConditions(fields, fuzzyConditions, operatorAnd, false)
+	t.Log(mainQuery)
+	mainQuery.PrepareSearchConditions([]string{"'abc'"}, operatorAnd, false)
+	mainQuery.PrepareFuzzyConditions([]string{"host"}, []string{"'%test_host%'"}, operatorAnd, false)
+	t.Log(mainQuery)
+
+	mainQuery = new(slsQuery)
+	searchConditions, fuzzyConditions = quoteConditions(conditions)
+	mainQuery.PrepareSearchConditions(searchConditions, operatorOr, false)
+	mainQuery.PrepareFuzzyConditions(fields, fuzzyConditions, operatorOr, false)
+	t.Log(mainQuery)
+
+	mainQuery = new(slsQuery)
+	searchConditions, fuzzyConditions = quoteConditions(conditions)
+	mainQuery.PrepareSearchConditions(searchConditions, operatorNot, true)
+	mainQuery.PrepareFuzzyConditions(fields, fuzzyConditions, operatorNot, true)
+	t.Log(mainQuery)
 }

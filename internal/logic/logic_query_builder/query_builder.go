@@ -11,7 +11,6 @@ import (
 	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
-	"github.com/spf13/cast"
 )
 
 var (
@@ -251,92 +250,134 @@ func (s *QueryBuilder) queryByHumanSLS(backend config.Backend, req service.Searc
 	}
 	queries = map[string]string{}
 	indexList := backend.MultiSearch[req.Storage].IndexList
+
+	var searchConditions, fuzzyConditions []string
 	for _, index := range indexList {
 		defaultFields, ok := backend.DefaultFields[index]
 		if !ok {
 			defaultFields = backend.DefaultFields[constant.DefaultValue]
 		}
-		var merge []string
-		if q := AndOrNotQueries(defaultFields, query.Must, " AND ", false); q != "" {
-			merge = append(merge, q)
-		}
-		if q := AndOrNotQueries(defaultFields, query.Or, " OR ", false); q != "" {
-			merge = append(merge, q)
-		}
-		if q := AndOrNotQueries(defaultFields, query.MustNot, " AND ", true); q != "" {
-			merge = append(merge, q)
-		}
-		if len(merge) <= 0 {
-			continue
-		}
 		buildInQueries, ok := backend.BuildInQueries[index]
 		if !ok {
 			buildInQueries = backend.BuildInQueries[constant.DefaultValue]
 		}
-		if q := AndOrNotBuildInQueryEntry(buildInQueries.Must, " AND ", false); q != "" {
-			merge = append(merge, q)
+		mainQuery := new(slsQuery)
+		searchConditions, fuzzyConditions = quoteConditions(query.Must)
+		mainQuery.PrepareSearchConditions(searchConditions, operatorAnd, false)
+		mainQuery.PrepareFuzzyConditions(defaultFields, fuzzyConditions, operatorAnd, false)
+		searchConditions, fuzzyConditions = quoteConditions(query.Or)
+		mainQuery.PrepareSearchConditions(searchConditions, operatorOr, false)
+		mainQuery.PrepareFuzzyConditions(defaultFields, fuzzyConditions, operatorAnd, false)
+		searchConditions, fuzzyConditions = quoteConditions(query.MustNot)
+		mainQuery.PrepareSearchConditions(searchConditions, operatorAnd, true)
+		mainQuery.PrepareFuzzyConditions(defaultFields, fuzzyConditions, operatorAnd, true)
+		if mainQuery.Empty() {
+			continue
 		}
-		if q := AndOrNotBuildInQueryEntry(buildInQueries.Or, " OR ", false); q != "" {
-			merge = append(merge, q)
-		}
-		if q := AndOrNotBuildInQueryEntry(buildInQueries.MustNot, " AND ", true); q != "" {
-			merge = append(merge, q)
-		}
-		queries[index] = strings.Join(merge, " AND ")
+		buildInQueries.Must.FieldConditions(func(field string, conditions []string) bool {
+			searchConditions2, fuzzyConditions2 := quoteConditions(conditions)
+			mainQuery.PrepareSearchConditions(searchConditions2, operatorAnd, false)
+			mainQuery.PrepareFuzzyConditions([]string{field}, fuzzyConditions2, operatorAnd, false)
+			return true
+		})
+		buildInQueries.Or.FieldConditions(func(field string, conditions []string) bool {
+			searchConditions2, fuzzyConditions2 := quoteConditions(conditions)
+			mainQuery.PrepareSearchConditions(searchConditions2, operatorOr, false)
+			mainQuery.PrepareFuzzyConditions([]string{field}, fuzzyConditions2, operatorOr, false)
+			return true
+		})
+		buildInQueries.MustNot.FieldConditions(func(field string, conditions []string) bool {
+			searchConditions2, fuzzyConditions2 := quoteConditions(conditions)
+			mainQuery.PrepareSearchConditions(searchConditions2, operatorAnd, true)
+			mainQuery.PrepareFuzzyConditions([]string{field}, fuzzyConditions2, operatorAnd, true)
+			return true
+		})
+		queries[index] = mainQuery.String()
 	}
 	return
 }
 
-func AndOrNotQueries(fields, conditions []string, op string, not bool) string {
-	var quoteConditions []string
-	for _, condition := range conditions {
-		if condition != "" {
-			condition = strings.ReplaceAll(condition, `'`, `\'`)
-			quoteConditions = append(quoteConditions, condition)
-		}
-	}
-	if len(conditions) <= 0 {
+const (
+	operatorAnd = " AND "
+	operatorOr  = " OR "
+	operatorNot = " AND NOT "
+)
+
+type slsQuery struct {
+	searchConditions []string
+	fuzzyConditions  []string
+}
+
+func (s *slsQuery) Empty() bool {
+	return len(s.fuzzyConditions) <= 0 && len(s.searchConditions) <= 0
+}
+
+func (s *slsQuery) String() string {
+	if s.Empty() {
 		return ""
 	}
+	var search string
+	if len(s.searchConditions) <= 0 {
+		search = "*"
+	} else {
+		search = strings.Join(s.searchConditions, operatorAnd)
+	}
+	var where string
+	if len(s.fuzzyConditions) > 0 {
+		where = " | SELECT * FROM log WHERE " + strings.Join(s.fuzzyConditions, operatorAnd)
+	}
+	return search + where
+}
+
+func (s *slsQuery) PrepareSearchConditions(conditions []string, operator string, not bool) {
+	if len(conditions) <= 0 {
+		return
+	}
+	var condition string
+	if not {
+		condition = "NOT " + strings.Join(conditions, operator)
+	} else {
+		condition = strings.Join(conditions, operator)
+	}
+	s.searchConditions = append(s.searchConditions, "("+condition+")")
+}
+
+func (s *slsQuery) PrepareFuzzyConditions(fields []string, conditions []string, operator string, not bool) {
+	if len(fields) <= 0 || len(conditions) <= 0 {
+		return
+	}
 	var res []string
-	for _, field := range fields {
-		operator := op
-		if field != "__raw__" {
-			operator = " OR "
-		}
+	for _, condition := range conditions {
 		var subQueries []string
-		for _, condition := range quoteConditions {
+		for _, field := range fields {
 			if not {
-				subQueries = append(subQueries, fmt.Sprintf(`("%s" not like '%%%s%%')`, field, condition))
+				subQueries = append(subQueries, fmt.Sprintf(`("%s" not like %s)`, field, condition))
 			} else {
-				subQueries = append(subQueries, fmt.Sprintf(`"%s" like '%%%s%%'`, field, condition))
+				subQueries = append(subQueries, fmt.Sprintf(`("%s" like %s)`, field, condition))
 			}
 		}
 		if len(subQueries) <= 0 {
 			continue
 		}
-		res = append(res, "("+strings.Join(subQueries, operator)+")")
+		res = append(res, "("+strings.Join(subQueries, operatorOr)+")")
 	}
-	if len(res) <= 0 {
-		return ""
-	}
-	return "(" + strings.Join(res, " OR ") + ")"
+	s.fuzzyConditions = append(s.fuzzyConditions, "("+strings.Join(res, operator)+")")
 }
 
-func AndOrNotBuildInQueryEntry(items []config.BuildInQueryEntry, op string, not bool) string {
-	var subQueries []string
-	for _, item := range items {
-		if !item.Always {
+func quoteConditions(conditions []string) (searchConditions, fuzzyConditions []string) {
+	for _, condition := range conditions {
+		if condition = strings.TrimSpace(condition); condition == "" {
 			continue
 		}
-		if q := AndOrNotQueries([]string{item.Field}, cast.ToStringSlice(item.Values), op, not); q != "" {
-			subQueries = append(subQueries, q)
+		condition = strings.ReplaceAll(condition, `'`, `\'`)
+		i := strings.IndexByte(condition, '%')
+		if i == 0 || i == len(condition)-1 {
+			fuzzyConditions = append(fuzzyConditions, "'"+condition+"'")
+		} else {
+			searchConditions = append(searchConditions, "'"+condition+"'")
 		}
 	}
-	if len(subQueries) <= 0 {
-		return ""
-	}
-	return "(" + strings.Join(subQueries, " OR ") + ")"
+	return
 }
 
 func (s *QueryBuilder) queryBySLSQuerySLS(backend config.Backend, req service.SearchRequest, query service.QueryBySLSQuery) (
