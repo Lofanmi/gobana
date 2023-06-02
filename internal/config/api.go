@@ -1,9 +1,16 @@
 package config
 
 import (
+	_ "embed"
 	"os"
 	"sync"
 )
+
+//go:embed data/qqwry.dat
+var ipv4QQWry []byte
+
+//go:embed data/ipv6wry.db
+var ipv6QQWry []byte
 
 var (
 	once   sync.Once
@@ -27,6 +34,15 @@ func GetConfig() Config {
 // @autowire(set=config)
 func GetConfigApplication() Application {
 	return GetConfig().Application
+}
+
+// GetConfigQQWry
+// @autowire(set=config)
+func GetConfigQQWry() QQWry {
+	result := GetConfig().QQWry
+	result.IPv4Data = ipv4QQWry
+	result.IPv6Data = ipv6QQWry
+	return result
 }
 
 // GetConfigBackendList

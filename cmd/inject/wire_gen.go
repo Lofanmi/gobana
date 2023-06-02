@@ -13,6 +13,7 @@ import (
 	"github.com/Lofanmi/gobana/internal/logic/logic_backend_factory"
 	"github.com/Lofanmi/gobana/internal/logic/logic_log_parser"
 	"github.com/Lofanmi/gobana/internal/logic/logic_lua_state"
+	"github.com/Lofanmi/gobana/internal/logic/logic_qq_wry"
 	"github.com/Lofanmi/gobana/internal/logic/logic_query_builder"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_config"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_logger"
@@ -28,7 +29,14 @@ func NewApplication() (*app.Application, func(), error) {
 	}
 	backendFactory := logic_backend_factory.NewBackendFactory(backendList)
 	queryBuilder := &logic_query_builder.QueryBuilder{}
-	luaState := &logic_lua_state.LuaState{}
+	qqWry := config.GetConfigQQWry()
+	logic_qq_wryQQWry, err := logic_qq_wry.NewQQWry(qqWry)
+	if err != nil {
+		return nil, nil, err
+	}
+	luaState := &logic_lua_state.LuaState{
+		QQWry: logic_qq_wryQQWry,
+	}
 	logParser := &logic_log_parser.LogParser{
 		LuaState: luaState,
 	}

@@ -98,6 +98,7 @@ type AccessLog struct {
 	XForwardedFor string      `json:"x_forwarded_for"`
 	Cookie        string      `json:"cookie"`
 	RemoteAddr    string      `json:"remote_addr"`
+	IPLocation    string      `json:"ip_location"`
 	Status        int         `json:"status"`
 	Message       string      `json:"message"`
 	CurlTemplate  string      `json:"curl_template"`

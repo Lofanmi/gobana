@@ -13,6 +13,7 @@ import (
 	"github.com/Lofanmi/gobana/internal/logic/logic_backend_factory"
 	"github.com/Lofanmi/gobana/internal/logic/logic_log_parser"
 	"github.com/Lofanmi/gobana/internal/logic/logic_lua_state"
+	"github.com/Lofanmi/gobana/internal/logic/logic_qq_wry"
 	"github.com/Lofanmi/gobana/internal/logic/logic_query_builder"
 )
 
@@ -27,6 +28,9 @@ var LogicsSet = wire.NewSet(
 
 	wire.Struct(new(logic_lua_state.LuaState), "*"),
 	wire.Bind(new(logic.LuaState), new(*logic_lua_state.LuaState)),
+
+	logic_qq_wry.NewQQWry,
+	wire.Bind(new(logic.QQWry), new(*logic_qq_wry.QQWry)),
 
 	wire.Struct(new(logic_query_builder.QueryBuilder), "*"),
 	wire.Bind(new(logic.QueryBuilder), new(*logic_query_builder.QueryBuilder)),

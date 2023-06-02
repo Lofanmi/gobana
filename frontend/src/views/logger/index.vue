@@ -17,6 +17,7 @@
             <kv-detail label="x_forwarded_for" :value="props.row.log.x_forwarded_for" :copy="true" />
             <kv-detail label="cookie" :value="props.row.log.cookie" :copy="true" />
             <kv-detail label="remote_addr" :value="props.row.log.remote_addr" :copy="true" />
+            <kv-detail label="ip_location" :value="props.row.log.ip_location" :copy="true" />
             <kv-detail label="message" :value="props.row.log.message" :copy="true" />
           </template>
           <template v-else-if="props.row.log_type === 'json-log'">
@@ -223,7 +224,7 @@ export default {
     },
     accessLogMessageFormatter(row) {
       const s = row.log
-      return `${s.method} [${s.remote_addr}] status[${s.status}] duration[${s.duration}]`
+      return `${s.method} [${s.remote_addr} ${s.ip_location}] [status:${s.status}] [${s.duration}] `
     },
     hashStringColor(s) {
       const colors = ['#2a9d2a', '#645b93', '#ff7f6a', '#5fc0ea', '#480048', '#601848', '#c04848', '#f07241', '#c71585', '#008b8b', '#7b68ee', '#ff7f50']

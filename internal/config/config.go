@@ -12,12 +12,20 @@ import (
 
 type Config struct {
 	Application Application `yaml:"application"`
+	QQWry       QQWry       `yaml:"qq_wry"`
 	BackendList BackendList `yaml:"backend_list"`
 }
 
 type Application struct {
 	Production bool   `yaml:"production"`
 	ListenAddr string `yaml:"listen_addr"`
+}
+
+type QQWry struct {
+	IPv4FilePath string `yaml:"ipv4_file_path"`
+	IPv4Data     []byte `yaml:"-"`
+	IPv6FilePath string `yaml:"ipv6_file_path"`
+	IPv6Data     []byte `yaml:"-"`
 }
 
 type BackendList []Backend
