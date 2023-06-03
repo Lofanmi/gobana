@@ -224,7 +224,7 @@ export default {
     },
     accessLogMessageFormatter(row) {
       const s = row.log
-      return `${s.method} [${s.remote_addr} ${s.ip_location}] [status:${s.status}] [${s.duration}] `
+      return `${s.method} [${s.status}] [${s.duration}] [${s.remote_addr} ${s.ip_location}]`
     },
     hashStringColor(s) {
       const colors = ['#2a9d2a', '#645b93', '#ff7f6a', '#5fc0ea', '#480048', '#601848', '#c04848', '#f07241', '#c71585', '#008b8b', '#7b68ee', '#ff7f50']

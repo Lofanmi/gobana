@@ -383,13 +383,14 @@ func quoteConditions(conditions []string) (searchConditions, fuzzyConditions []s
 func (s *QueryBuilder) queryBySLSQuerySLS(backend config.Backend, req service.SearchRequest, query service.QueryBySLSQuery) (
 	queries map[string]string,
 ) {
-	if len(query.SQL) <= 0 {
+	query.SLSQuery = strings.TrimSpace(query.SLSQuery)
+	if len(query.SLSQuery) <= 0 {
 		return
 	}
 	queries = map[string]string{}
 	indexList := backend.MultiSearch[req.Storage].IndexList
 	for _, index := range indexList {
-		queries[index] = query.SQL
+		queries[index] = query.SLSQuery
 	}
 	return
 }

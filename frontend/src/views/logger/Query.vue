@@ -36,7 +36,7 @@
         </el-form>
       </el-tab-pane>
       <el-tab-pane label="Lucene" name="query_by_lucene">
-        <div class="lucene-help">
+        <div class="tips-helper">
           <el-alert
             title="Lucene 语法助手"
             type="info"
@@ -47,6 +47,21 @@
         <el-form :inline="false" label-width="150px" @submit.native.prevent>
           <el-form-item label="Lucene">
             <el-input v-model="form.lucene" @keyup.enter.native="query(1)" />
+          </el-form-item>
+        </el-form>
+      </el-tab-pane>
+      <el-tab-pane label="SLS-Query" name="query_by_sls_query">
+        <div class="tips-helper">
+          <el-alert
+            title="SLS 语法助手"
+            type="info"
+            :description="helper_sls_query"
+            show-icon
+          />
+        </div>
+        <el-form :inline="false" label-width="150px" @submit.native.prevent>
+          <el-form-item label="阿里云 SLS 查询语句">
+            <el-input v-model="form.sls_query" @keyup.enter.native="query(1)" />
           </el-form-item>
         </el-form>
       </el-tab-pane>
@@ -130,6 +145,7 @@ export default {
         must_not1: '', must_not2: '', must_not3: '', must_not4: '', must_not5: '', must_not6: '', must_not7: '', must_not8: '',
         time_a: 0, time_b: 0,
         lucene: '',
+        sls_query: '* | select * from log',
         chart_interval: 0,
         chart_visible: true,
         track_total_hits: true
@@ -182,7 +198,8 @@ export default {
           }
         }]
       },
-      helper_lucene: 'message:ok AND grade:(60,80] AND NOT error'
+      helper_lucene: 'message:ok AND grade:(60,80] AND NOT error',
+      helper_sls_query: `'sdk/login' AND NOT 'error' | select * from log where post_data like '%pid=1%'`
     }
   },
   computed: {
@@ -206,6 +223,11 @@ export default {
       if (this.query_by === 'query_by_lucene') {
         return {
           lucene: this.form.lucene
+        }
+      }
+      if (this.query_by === 'query_by_sls_query') {
+        return {
+          sls_query: this.form.sls_query
         }
       }
       return {}
@@ -347,7 +369,7 @@ export default {
 .search-input {
   width: 160px;
 }
-.lucene-help {
+.tips-helper {
   margin: 0 0 10px 0;
 }
 </style>

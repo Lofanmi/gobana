@@ -38,7 +38,7 @@ type QueryByLucene struct {
 }
 
 type QueryBySLSQuery struct {
-	SQL string `json:"sql"`
+	SLSQuery string `json:"sls_query"`
 }
 
 type SearchRequest struct {

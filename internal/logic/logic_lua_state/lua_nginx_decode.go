@@ -1,6 +1,7 @@
 package logic_lua_state
 
 import (
+	"strings"
 	"unsafe"
 
 	"go.uber.org/zap/buffer"
@@ -26,6 +27,7 @@ func nginxDecode(s string) string {
 	if s[0] != '{' {
 		return ""
 	}
+	s = strings.ReplaceAll(s, `\\x`, `\x`)
 	state := 0
 	buf := p.Get()
 	data := string2Bytes(s)

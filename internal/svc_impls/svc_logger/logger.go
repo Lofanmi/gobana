@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -281,16 +282,18 @@ func (s *Service) searchDoSLS(
 	mu := new(sync.RWMutex)
 	from, to := req.TimeA/1000, req.TimeB/1000
 	offset, limit := (req.PageNo-1)*req.PageSize, req.PageSize
+	queryUpper := strings.ToUpper(query)
 
 	var queryCount string
-	if strings.Contains(query, "SELECT") {
-		queryCount = strings.ReplaceAll(query, "SELECT *", "SELECT COUNT(*) as count")
+	if strings.Contains(queryUpper, "SELECT") {
+		re := regexp.MustCompile(`(?i)select \*`)
+		queryCount = re.ReplaceAllString(query, "SELECT COUNT(*) as count")
 	} else {
 		queryCount = fmt.Sprintf(`%s | SELECT COUNT(*) as count FROM log`, query)
 	}
 
 	var queryLog string
-	if strings.Contains(query, "SELECT") {
+	if strings.Contains(queryUpper, "SELECT") {
 		queryLog = fmt.Sprintf(`%s ORDER BY __time__ DESC LIMIT %d, %d`, query, offset, limit)
 	} else {
 		queryLog = fmt.Sprintf(`%s | SELECT * FROM log ORDER BY __time__ DESC LIMIT %d, %d`, query, offset, limit)
