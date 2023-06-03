@@ -34,13 +34,17 @@ func nginxDecode(s string) string {
 		letter := data[i]
 		switch letter {
 		case '\\':
-			if state == 0 {
+			if state == 0 && i < length-1 && data[i+1] == 'x' {
 				state = 1
+			} else {
+				state = 0
+				buf.AppendByte('\\')
 			}
 		case 'x':
 			if state == 1 {
 				state = 2
 			} else {
+				state = 0
 				buf.AppendByte('x')
 			}
 		default:
