@@ -335,6 +335,7 @@ func (s *slsQuery) PrepareSearchConditions(conditions []string, operator string,
 	}
 	var condition string
 	if not {
+		operator = " AND NOT "
 		condition = "NOT " + strings.Join(conditions, operator)
 	} else {
 		condition = strings.Join(conditions, operator)
@@ -372,9 +373,9 @@ func quoteConditions(conditions []string) (searchConditions, fuzzyConditions []s
 		condition = strings.ReplaceAll(condition, `'`, `\'`)
 		i := strings.IndexByte(condition, '%')
 		if i == 0 || i == len(condition)-1 {
-			fuzzyConditions = append(fuzzyConditions, "'"+condition+"'")
+			fuzzyConditions = append(fuzzyConditions, `"`+condition+`"`)
 		} else {
-			searchConditions = append(searchConditions, "'"+condition+"'")
+			searchConditions = append(searchConditions, `"`+condition+`"`)
 		}
 	}
 	return
