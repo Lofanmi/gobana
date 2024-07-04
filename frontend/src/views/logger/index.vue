@@ -218,7 +218,7 @@ export default {
     jsonFormatter(v) { return jsonFormatter(JSON.stringify(v)) },
     timestampFormatter(row) {
       const time = +(new Date(row.log.time))
-      const ts = (time * 0.001).toFixed()
+      const ts = parseInt(time * 0.001)
       const ms = formatInteger(time % 1000, 3, '0')
       return date('Y-m-d H:i:s', ts) + '.' + ms
     },
