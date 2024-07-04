@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Just-maple/structgraph v0.0.0-20210401103730-b665193425d9
-	github.com/aliyun/aliyun-log-go-sdk v0.1.44
+	github.com/aliyun/aliyun-log-go-sdk v0.1.80
 	github.com/gin-gonic/gin v1.9.0
 	github.com/google/wire v0.5.1-0.20220620021424-0675cdc9191c
 	github.com/olivere/elastic/v7 v7.0.32
@@ -36,6 +36,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -54,6 +55,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.9 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect

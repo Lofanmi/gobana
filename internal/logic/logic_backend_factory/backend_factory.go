@@ -69,14 +69,14 @@ func (s *BackendFactory) GetBackend(name string) (res interface{}, err error) {
 		if backend.Name != name {
 			continue
 		}
-		return s.getClient(backend)
+		return s.getClient(name, backend)
 	}
 	return
 }
 
-func (s *BackendFactory) getClient(config config.Backend) (res interface{}, err error) {
+func (s *BackendFactory) getClient(name string, config config.Backend) (res interface{}, err error) {
 	typ := config.Type
-	if _, ok := s.m[typ]; !ok {
+	if _, ok := s.m[name]; !ok {
 		switch typ {
 		case constant.ClientTypeElasticsearch:
 			fallthrough
@@ -91,7 +91,7 @@ func (s *BackendFactory) getClient(config config.Backend) (res interface{}, err 
 			if err != nil {
 				return
 			}
-			s.m[typ] = cli
+			s.m[name] = cli
 		case constant.ClientTypeSLS:
 			cli := &sls.Client{
 				Endpoint:        config.Addr,
@@ -100,9 +100,9 @@ func (s *BackendFactory) getClient(config config.Backend) (res interface{}, err 
 				SecurityToken:   "",
 				HTTPClient:      s.httpClient,
 			}
-			s.m[typ] = cli
+			s.m[name] = cli
 		}
 	}
-	res = s.m[typ]
+	res = s.m[name]
 	return
 }
