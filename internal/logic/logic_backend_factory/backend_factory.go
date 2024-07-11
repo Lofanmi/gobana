@@ -94,12 +94,16 @@ func (s *BackendFactory) getClient(name string, config config.Backend) (res inte
 			s.m[name] = cli
 		case constant.ClientTypeSLS:
 			cli := &sls.Client{
-				Endpoint:        config.Addr,
-				AccessKeyID:     config.Auth.AccessKeyID,
-				AccessKeySecret: config.Auth.AccessKeySecret,
-				SecurityToken:   "",
-				HTTPClient:      s.httpClient,
+				Endpoint:   config.Addr,
+				HTTPClient: s.httpClient,
 			}
+			cli.WithCredentialsProvider(
+				sls.NewStaticCredentialsProvider(
+					config.Auth.AccessKeyID,
+					config.Auth.AccessKeySecret,
+					"",
+				),
+			)
 			s.m[name] = cli
 		}
 	}

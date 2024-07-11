@@ -22,7 +22,11 @@ import (
 	"github.com/olivere/elastic/v7/uritemplates"
 )
 
-var _ service.Logger = &Service{}
+var (
+	_ service.Logger = &Service{}
+
+	reSelectCount = regexp.MustCompile(`(?i)select \*`)
+)
 
 const (
 	defaultPageNo        = 1
@@ -281,60 +285,86 @@ func (s *Service) searchDoSLS(
 	wg := new(sync.WaitGroup)
 	mu := new(sync.RWMutex)
 	from, to := req.TimeA/1000, req.TimeB/1000
-	offset, limit := (req.PageNo-1)*req.PageSize, req.PageSize
-	queryUpper := strings.ToUpper(query)
+	offset, limit := int64((req.PageNo-1)*req.PageSize), int64(req.PageSize)
 
-	var queryCount string
-	if strings.Contains(queryUpper, "SELECT") {
-		re := regexp.MustCompile(`(?i)select \*`)
-		queryCount = re.ReplaceAllString(query, "SELECT COUNT(*) as count")
+	var (
+		phrase, where string
+	)
+	if strings.Contains(query, "|") {
+		pieces = strings.Split(query, "|")
+		phrase, where = strings.TrimSpace(pieces[0]), strings.TrimSpace(pieces[1])
 	} else {
-		queryCount = fmt.Sprintf(`%s | SELECT COUNT(*) as count FROM log`, query)
+		phrase = strings.TrimSpace(query)
 	}
 
-	var queryLog string
-	if strings.Contains(queryUpper, "SELECT") {
-		queryLog = fmt.Sprintf(`%s ORDER BY __time__ DESC LIMIT %d, %d`, query, offset, limit)
+	slsRequest := &sls.GetLogRequest{From: from, To: to, Query: query, Lines: limit, Offset: offset, Reverse: true}
+	if where != "" {
+		slsRequest.Query = fmt.Sprintf(`%s | %s ORDER BY __time__ DESC LIMIT %d, %d`, phrase, where, offset, limit)
 	} else {
-		queryLog = fmt.Sprintf(`%s | SELECT * FROM log ORDER BY __time__ DESC LIMIT %d, %d`, query, offset, limit)
+		slsRequest.Query = phrase
 	}
-	queryAggregation := query
 
-	powerSQL := false
 	switch backend.Type {
 	case constant.ClientTypeSLS:
 		if req.TrackTotalHits {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				resp, e := cli.GetLogsV2(project, store, &sls.GetLogRequest{From: from, To: to, Query: queryCount, PowerSQL: powerSQL})
-				if e == nil {
+				if where != "" {
+					slsRequestCount := &sls.GetLogRequest{From: from, To: to}
+					slsRequestCount.Query = fmt.Sprintf(`%s | %s `, phrase, reSelectCount.ReplaceAllString(where, "SELECT COUNT(*) as count"))
+					resp, e := cli.GetLogsV3(project, store, slsRequestCount)
+					if e != nil {
+						mu.Lock()
+						result.ErrorByGetLogs = e
+						mu.Unlock()
+						return
+					}
 					mu.Lock()
-					result.ResponseCount = resp
+					result.ResponseCountByGetLogs = resp
 					mu.Unlock()
+					return
 				}
+				resp, e := cli.GetHistograms(project, store, "", from, to, slsRequest.Query)
+				if e != nil {
+					mu.Lock()
+					result.ErrorByGetHistograms = e
+					mu.Unlock()
+					return
+				}
+				mu.Lock()
+				result.ResponseCountByGetHistograms = resp
+				mu.Unlock()
 			}()
 		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			resp, e := cli.GetLogsV2(project, store, &sls.GetLogRequest{From: from, To: to, Query: queryLog, PowerSQL: powerSQL})
-			if e == nil {
+			resp, e := cli.GetLogsV3(project, store, slsRequest)
+			if e != nil {
 				mu.Lock()
-				result.ResponseLog = resp
+				result.ErrorByGetLogs = e
 				mu.Unlock()
+				return
 			}
+			mu.Lock()
+			result.ResponseLog = resp
+			mu.Unlock()
 		}()
 		if req.ChartVisible {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				resp, e := cli.GetHistograms(project, store, "", from, to, queryAggregation)
-				if e == nil {
+				resp, e := cli.GetHistograms(project, store, "", from, to, slsRequest.Query)
+				if e != nil {
 					mu.Lock()
-					result.ResponseAggregation = resp
+					result.ErrorResponseAggregation = e
 					mu.Unlock()
+					return
 				}
+				mu.Lock()
+				result.ResponseAggregation = resp
+				mu.Unlock()
 			}()
 		}
 	}

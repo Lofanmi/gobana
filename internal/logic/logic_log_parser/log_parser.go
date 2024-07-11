@@ -54,17 +54,19 @@ func (s *LogParser) ParseElastic(backend config.Backend, m map[string]*elastic.S
 func (s *LogParser) ParseSLS(backend config.Backend, m map[string]logic.SLSSearchResult) (total int, logs service.LogItems, err error) {
 	logs = make([]service.LogItem, 0, total)
 	for index, result := range m {
-		countRes, logRes := result.ResponseCount, result.ResponseLog
-		if logRes == nil || len(logRes.Logs) <= 0 {
+		if result.ResponseLog == nil || len(result.ResponseLog.Logs) <= 0 {
 			continue
 		}
-		if countRes != nil && len(countRes.Logs) > 0 {
-			log := countRes.Logs[0]
-			total = cast.ToInt(log["count"])
+		if result.ResponseCountByGetHistograms != nil {
+			total += int(result.ResponseCountByGetHistograms.Count)
+		} else if result.ResponseCountByGetLogs != nil && len(result.ResponseCountByGetLogs.Logs) > 0 {
+			if log := result.ResponseCountByGetLogs.Logs[0]; log != nil {
+				total += cast.ToInt(log["count"])
+			}
 		} else {
 			total = 10000
 		}
-		for _, hit := range logRes.Logs {
+		for _, hit := range result.ResponseLog.Logs {
 			for k, v := range hit {
 				if v == "" || v == "null" {
 					delete(hit, k)

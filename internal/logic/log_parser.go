@@ -8,9 +8,14 @@ import (
 )
 
 type SLSSearchResult struct {
-	ResponseCount       *sls.GetLogsResponse       `json:"response_count"`
-	ResponseLog         *sls.GetLogsResponse       `json:"response_log"`
-	ResponseAggregation *sls.GetHistogramsResponse `json:"response_aggregation"`
+	ResponseCountByGetHistograms *sls.GetHistogramsResponse `json:"response_count_by_get_histograms"`
+	ResponseCountByGetLogs       *sls.GetLogsV3Response     `json:"response_count_by_get_logs"`
+	ResponseLog                  *sls.GetLogsV3Response     `json:"response_log"`
+	ResponseAggregation          *sls.GetHistogramsResponse `json:"response_aggregation"`
+	ErrorByGetHistograms         error                      `json:"error_by_get_histograms"`
+	ErrorByGetLogs               error                      `json:"error_by_get_logs"`
+	ErrorResponseLog             error                      `json:"error_response_log"`
+	ErrorResponseAggregation     error                      `json:"error_response_aggregation"`
 }
 
 type LogParser interface {
