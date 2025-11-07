@@ -13,7 +13,7 @@ import (
 const indexName = "index-json-log"
 
 var (
-	backend = config.Backend{
+	backend = config.BackendConfig{
 		Type:          constant.ClientTypeElasticsearch,
 		MultiSearch:   map[string]config.MultiSearch{"程序日志": {IndexList: []string{indexName}}},
 		DefaultFields: map[string][]string{indexName: {"host", "tag"}},
@@ -55,7 +55,7 @@ func TestQueryBuilder_SearchQueryElastic_QueryTypeByHuman(t *testing.T) {
 	t2 := time.Now()
 	t1 := t2.Add(-time.Hour)
 	type args struct {
-		backend config.Backend
+		backend config.BackendConfig
 		req     service.SearchRequest
 	}
 	tests := []struct {
@@ -109,7 +109,7 @@ func TestQueryBuilder_SearchQueryElastic_QueryTypeByLucene(t *testing.T) {
 	t2 := time.Now()
 	t1 := t2.Add(-time.Hour)
 	type args struct {
-		backend config.Backend
+		backend config.BackendConfig
 		req     service.SearchRequest
 	}
 	tests := []struct {

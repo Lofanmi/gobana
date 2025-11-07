@@ -30,7 +30,7 @@ type LogParser struct {
 	LuaState logic.LuaState
 }
 
-func (s *LogParser) ParseElastic(backend config.Backend, m map[string]*elastic.SearchResult) (total int, logs service.LogItems, err error) {
+func (s *LogParser) ParseElastic(backend config.BackendConfig, m map[string]*elastic.SearchResult) (total int, logs service.LogItems, err error) {
 	total = s.parseElasticTotal(m)
 	logs = make([]service.LogItem, 0, total)
 	for _, result := range m {
@@ -51,7 +51,7 @@ func (s *LogParser) ParseElastic(backend config.Backend, m map[string]*elastic.S
 	return
 }
 
-func (s *LogParser) ParseSLS(backend config.Backend, m map[string]logic.SLSSearchResult) (total int, logs service.LogItems, err error) {
+func (s *LogParser) ParseSLS(backend config.BackendConfig, m map[string]logic.SLSSearchResult) (total int, logs service.LogItems, err error) {
 	logs = make([]service.LogItem, 0, total)
 	for index, result := range m {
 		if result.ResponseLog == nil || len(result.ResponseLog.Logs) <= 0 {
@@ -96,7 +96,7 @@ func (s *LogParser) parseElasticTotal(m map[string]*elastic.SearchResult) (total
 	return
 }
 
-func (s *LogParser) parseLogBytes(backend config.Backend, data []byte) (logItem service.LogItem, err error) {
+func (s *LogParser) parseLogBytes(backend config.BackendConfig, data []byte) (logItem service.LogItem, err error) {
 	hitMap := map[string]interface{}{}
 	if err = json.Unmarshal(data, &hitMap); err != nil {
 		return
@@ -140,7 +140,7 @@ func (s *LogParser) parseLogBytes(backend config.Backend, data []byte) (logItem 
 	return
 }
 
-func (s *LogParser) parseLogType(backend config.Backend, tb *lua.LTable) (logType service.LogType, _sourceTable *lua.LTable, _sourceString string, err error) {
+func (s *LogParser) parseLogType(backend config.BackendConfig, tb *lua.LTable) (logType service.LogType, _sourceTable *lua.LTable, _sourceString string, err error) {
 	L, fn := s.LuaState.GetLuaState()
 	lua_json.Preload(L)
 	defer fn()

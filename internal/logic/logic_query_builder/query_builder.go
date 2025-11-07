@@ -21,7 +21,7 @@ var (
 // @autowire(logic.QueryBuilder,set=logics)
 type QueryBuilder struct{}
 
-func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.SearchRequest) (
+func (s *QueryBuilder) SearchQueryElastic(backend config.BackendConfig, req service.SearchRequest) (
 	queries map[string]elastic.Query,
 	aggregations map[string]elastic.Aggregation,
 	err error,
@@ -48,7 +48,7 @@ func (s *QueryBuilder) SearchQueryElastic(backend config.Backend, req service.Se
 	return
 }
 
-func (s *QueryBuilder) queryByHumanElastic(backend config.Backend, req service.SearchRequest, query service.QueryByHuman) (
+func (s *QueryBuilder) queryByHumanElastic(backend config.BackendConfig, req service.SearchRequest, query service.QueryByHuman) (
 	queries map[string]elastic.Query,
 	aggregations map[string]elastic.Aggregation,
 ) {
@@ -107,7 +107,7 @@ func (s *QueryBuilder) queryByHumanElastic(backend config.Backend, req service.S
 	return
 }
 
-func (s *QueryBuilder) queryByLuceneElastic(backend config.Backend, req service.SearchRequest, query service.QueryByLucene) (
+func (s *QueryBuilder) queryByLuceneElastic(backend config.BackendConfig, req service.SearchRequest, query service.QueryByLucene) (
 	queries map[string]elastic.Query,
 	aggregations map[string]elastic.Aggregation,
 ) {
@@ -216,7 +216,7 @@ func MustOrMustNotQueries(defaultFields, conditions []string, emptySearchHit *bo
 	}
 }
 
-func (s *QueryBuilder) SearchQuerySLS(backend config.Backend, req service.SearchRequest) (
+func (s *QueryBuilder) SearchQuerySLS(backend config.BackendConfig, req service.SearchRequest) (
 	queries map[string]string,
 	err error,
 ) {
@@ -242,7 +242,7 @@ func (s *QueryBuilder) SearchQuerySLS(backend config.Backend, req service.Search
 	return
 }
 
-func (s *QueryBuilder) queryByHumanSLS(backend config.Backend, req service.SearchRequest, query service.QueryByHuman) (
+func (s *QueryBuilder) queryByHumanSLS(backend config.BackendConfig, req service.SearchRequest, query service.QueryByHuman) (
 	queries map[string]string,
 ) {
 	if len(query.Or) <= 0 && len(query.Must) <= 0 && len(query.MustNot) <= 0 {
@@ -381,7 +381,7 @@ func quoteConditions(conditions []string) (searchConditions, fuzzyConditions []s
 	return
 }
 
-func (s *QueryBuilder) queryBySLSQuerySLS(backend config.Backend, req service.SearchRequest, query service.QueryBySLSQuery) (
+func (s *QueryBuilder) queryBySLSQuerySLS(backend config.BackendConfig, req service.SearchRequest, query service.QueryBySLSQuery) (
 	queries map[string]string,
 ) {
 	query.SLSQuery = strings.TrimSpace(query.SLSQuery)

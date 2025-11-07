@@ -19,6 +19,6 @@ type SLSSearchResult struct {
 }
 
 type LogParser interface {
-	ParseElastic(backend config.Backend, m map[string]*elastic.SearchResult) (total int, logs service.LogItems, err error)
-	ParseSLS(backend config.Backend, m map[string]SLSSearchResult) (total int, logs service.LogItems, err error)
+	ParseElastic(backend config.BackendConfig, m map[string]*elastic.SearchResult) (total int, logs service.LogItems, err error)
+	ParseSLS(backend config.BackendConfig, m map[string]SLSSearchResult) (total int, logs service.LogItems, err error)
 }

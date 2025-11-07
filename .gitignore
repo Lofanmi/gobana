@@ -22,6 +22,8 @@ go.work
 gobana
 *.bak
 *.lua
-config.yaml
 frontend/node_modules/*
 .DS_Store
+
+scripts/*
+data/*

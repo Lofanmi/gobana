@@ -23,7 +23,7 @@ import (
 
 func NewApplication() (*app.Application, func(), error) {
 	application := config.GetConfigApplication()
-	backendList := config.GetConfigBackendList()
+	backendList := config.GetConfigBackends()
 	service := &svc_config.Service{
 		BackendListConfig: backendList,
 	}

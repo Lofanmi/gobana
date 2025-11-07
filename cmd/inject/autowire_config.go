@@ -14,7 +14,7 @@ import (
 var ConfigSet = wire.NewSet(
 	config.GetConfigApplication,
 
-	config.GetConfigBackendList,
+	config.GetConfigBackends,
 
 	config.GetConfigQQWry,
 )

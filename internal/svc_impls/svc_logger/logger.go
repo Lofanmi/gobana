@@ -38,7 +38,7 @@ const (
 // Service
 // @autowire(service.Logger,set=service)
 type Service struct {
-	BackendListConfig config.BackendList
+	BackendListConfig config.Backends
 	BackendFactory    logic.BackendFactory
 	QueryBuilder      logic.QueryBuilder
 	LogParser         logic.LogParser
@@ -82,7 +82,7 @@ func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp s
 	}
 }
 
-func (s *Service) searchByElastic(ctx context.Context, backend config.Backend, req service.SearchRequest) (resp service.SearchResponse, err error) {
+func (s *Service) searchByElastic(ctx context.Context, backend config.BackendConfig, req service.SearchRequest) (resp service.SearchResponse, err error) {
 	cli, err := s.BackendFactory.GetBackendElastic(backend.Name)
 	if err != nil {
 		return
@@ -119,7 +119,7 @@ func (s *Service) searchByElastic(ctx context.Context, backend config.Backend, r
 func (s *Service) elasticSearchResult(
 	ctx context.Context,
 	cli *elastic.Client,
-	backend config.Backend,
+	backend config.BackendConfig,
 	req service.SearchRequest,
 ) (
 	m map[string]*elastic.SearchResult,
@@ -162,7 +162,7 @@ func (s *Service) elasticSearchResult(
 	return
 }
 
-func (s *Service) searchDoElastic(ctx context.Context, backend config.Backend, cli *elastic.Client, search *elastic.SearchService) (result *elastic.SearchResult, err error) {
+func (s *Service) searchDoElastic(ctx context.Context, backend config.BackendConfig, cli *elastic.Client, search *elastic.SearchService) (result *elastic.SearchResult, err error) {
 	switch backend.Type {
 	case constant.ClientTypeElasticsearch:
 		result, err = search.Do(ctx)
@@ -205,7 +205,7 @@ func (s *Service) searchDoElastic(ctx context.Context, backend config.Backend, c
 	return
 }
 
-func (s *Service) searchBySLS(ctx context.Context, backend config.Backend, req service.SearchRequest) (resp service.SearchResponse, err error) {
+func (s *Service) searchBySLS(ctx context.Context, backend config.BackendConfig, req service.SearchRequest) (resp service.SearchResponse, err error) {
 	cli, err := s.BackendFactory.GetBackendSLS(backend.Name)
 	if err != nil {
 		return
@@ -240,7 +240,7 @@ func (s *Service) searchBySLS(ctx context.Context, backend config.Backend, req s
 func (s *Service) slsSearchResult(
 	ctx context.Context,
 	cli sls.ClientInterface,
-	backend config.Backend,
+	backend config.BackendConfig,
 	req service.SearchRequest,
 ) (
 	m map[string]logic.SLSSearchResult,
@@ -271,7 +271,7 @@ func (s *Service) slsSearchResult(
 
 func (s *Service) searchDoSLS(
 	ctx context.Context,
-	backend config.Backend,
+	backend config.BackendConfig,
 	cli sls.ClientInterface,
 	req service.SearchRequest,
 	index, query string,

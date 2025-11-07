@@ -45,10 +45,10 @@ func GetConfigQQWry() QQWry {
 	return result
 }
 
-// GetConfigBackendList
+// GetConfigBackends
 // @autowire(set=config)
-func GetConfigBackendList() BackendList {
-	list := GetConfig().BackendList
-	list.Default()
-	return list
+func GetConfigBackends() Backends {
+	result := GetConfig().Backends
+	// result.Default()
+	return result
 }

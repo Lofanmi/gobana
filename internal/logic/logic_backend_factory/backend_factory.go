@@ -19,13 +19,13 @@ var (
 // BackendFactory
 // @autowire(set=logics)
 type BackendFactory struct {
-	BackendListConfig config.BackendList
+	BackendListConfig config.Backends
 	m                 map[string]interface{}
 	mu                *sync.Mutex
 	httpClient        *http.Client
 }
 
-func NewBackendFactory(backendListConfig config.BackendList) logic.BackendFactory {
+func NewBackendFactory(backendListConfig config.Backends) logic.BackendFactory {
 	s := &BackendFactory{
 		BackendListConfig: backendListConfig,
 		m:                 map[string]interface{}{},
@@ -74,7 +74,7 @@ func (s *BackendFactory) GetBackend(name string) (res interface{}, err error) {
 	return
 }
 
-func (s *BackendFactory) getClient(name string, config config.Backend) (res interface{}, err error) {
+func (s *BackendFactory) getClient(name string, config config.BackendConfig) (res interface{}, err error) {
 	typ := config.Type
 	if _, ok := s.m[name]; !ok {
 		switch typ {
