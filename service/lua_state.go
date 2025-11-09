@@ -1,4 +1,4 @@
-package logic
+package service
 
 import (
 	lua "github.com/yuin/gopher-lua"

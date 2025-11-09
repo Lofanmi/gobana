@@ -1,4 +1,4 @@
-package logic_log_parser
+package svc_log_parser
 
 import (
 	"encoding/json"
@@ -8,10 +8,8 @@ import (
 	"unsafe"
 
 	"github.com/Lofanmi/gobana/internal/config"
-	"github.com/Lofanmi/gobana/internal/constant"
 	"github.com/Lofanmi/gobana/internal/gotil"
 	"github.com/Lofanmi/gobana/internal/gotil/lua_json"
-	"github.com/Lofanmi/gobana/internal/logic"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
 	"github.com/spf13/cast"
@@ -21,16 +19,18 @@ import (
 )
 
 var (
-	_ logic.LogParser = &LogParser{}
+	_ service.LogParser = &LogParser{}
 )
 
 // LogParser
-// @autowire(logic.LogParser,set=logics)
+// @autowire(service.LogParser,set=service)
 type LogParser struct {
-	LuaState logic.LuaState
+	Backends config.Backends
+	LuaState service.LuaState
 }
 
-func (s *LogParser) ParseElastic(backend config.BackendConfig, m map[string]*elastic.SearchResult) (total int, logs service.LogItems, err error) {
+func (s *LogParser) ParseElastic(backendName string, m map[string]*elastic.SearchResult) (total int, logs service.LogItems, err error) {
+	backend := s.Backends[backendName]
 	total = s.parseElasticTotal(m)
 	logs = make([]service.LogItem, 0, total)
 	for _, result := range m {
@@ -51,7 +51,8 @@ func (s *LogParser) ParseElastic(backend config.BackendConfig, m map[string]*ela
 	return
 }
 
-func (s *LogParser) ParseSLS(backend config.BackendConfig, m map[string]logic.SLSSearchResult) (total int, logs service.LogItems, err error) {
+func (s *LogParser) ParseSLS(backendName string, m map[string]service.SlsSearchResult) (total int, logs service.LogItems, err error) {
+	backend := s.Backends[backendName]
 	logs = make([]service.LogItem, 0, total)
 	for index, result := range m {
 		if result.ResponseLog == nil || len(result.ResponseLog.Logs) <= 0 {
@@ -97,12 +98,12 @@ func (s *LogParser) parseElasticTotal(m map[string]*elastic.SearchResult) (total
 }
 
 func (s *LogParser) parseLogBytes(backend config.BackendConfig, data []byte) (logItem service.LogItem, err error) {
-	hitMap := map[string]interface{}{}
+	hitMap := map[string]any{}
 	if err = json.Unmarshal(data, &hitMap); err != nil {
 		return
 	}
 	tb := gotil.MapToTable(hitMap)
-	var logInterface interface{}
+	var logInterface any
 	logTime := ""
 	logType, _sourceTable, _sourceString, e := s.parseLogType(backend, tb)
 	if e != nil {
@@ -177,7 +178,7 @@ func (s *LogParser) parseLogType(backend config.BackendConfig, tb *lua.LTable) (
 	return
 }
 
-func parseLog[T service.Log](parser *LogParser, parserFields []config.ParserField, log []byte, source map[string]interface{}, _sourceTable *lua.LTable, res T) (err error) {
+func parseLog[T service.Log](parser *LogParser, parserFields []config.ParserField, log []byte, source map[string]any, _sourceTable *lua.LTable, res T) (err error) {
 	g := gjson.ParseBytes(log)
 	targetJSON := ""
 	for _, field := range parserFields {
@@ -193,7 +194,7 @@ func parseLog[T service.Log](parser *LogParser, parserFields []config.ParserFiel
 
 func handleParserField(parser *LogParser, field *config.ParserField, g gjson.Result, targetJSON *string, _sourceTable *lua.LTable) {
 	switch field.Type {
-	case constant.ParserFieldTypeReplacements:
+	case service.ParserFieldTypeReplacements:
 		var value string
 		for _, fromField := range field.FromFields {
 			value = g.Get(fromField).String()
@@ -207,7 +208,7 @@ func handleParserField(parser *LogParser, field *config.ParserField, g gjson.Res
 		if newValue, err := sjson.Set(*targetJSON, field.ToField, value); err == nil {
 			*targetJSON = newValue
 		}
-	case constant.ParserFieldTypeLua:
+	case service.ParserFieldTypeLua:
 		L, fn := parser.LuaState.GetLuaState()
 		lua_json.Preload(L)
 		defer fn()
@@ -227,15 +228,15 @@ func handleParserField(parser *LogParser, field *config.ParserField, g gjson.Res
 			if errString.String() != "" {
 				continue
 			}
-			var newValue interface{}
+			var newValue any
 			switch field.LuaReturn {
-			case constant.ParserFieldReturnString:
+			case service.ParserFieldReturnString:
 				if res, ok := ret.(lua.LString); !ok {
 					continue
 				} else {
 					newValue = string(res)
 				}
-			case constant.ParserFieldReturnNumber:
+			case service.ParserFieldReturnNumber:
 				if res, ok := ret.(lua.LNumber); !ok {
 					continue
 				} else {

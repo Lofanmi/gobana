@@ -1,4 +1,4 @@
-package logic_qq_wry
+package svc_qq_wry
 
 import (
 	"context"
@@ -11,18 +11,18 @@ import (
 	"strings"
 
 	"github.com/Lofanmi/gobana/internal/config"
-	"github.com/Lofanmi/gobana/internal/logic"
+	"github.com/Lofanmi/gobana/service"
 	"github.com/zu1k/nali/pkg/qqwry"
 	"github.com/zu1k/nali/pkg/wry"
 	"github.com/zu1k/nali/pkg/zxipv6wry"
 )
 
 var (
-	_ logic.QQWry = &QQWry{}
+	_ service.QQWry = &QQWry{}
 )
 
 // QQWry
-// @autowire(logic.QQWry,set=logics)
+// @autowire(service.QQWry,set=service)
 type QQWry struct {
 	IPv4 *qqwry.QQwry
 	IPv6 *zxipv6wry.ZXwry

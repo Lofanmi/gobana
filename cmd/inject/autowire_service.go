@@ -8,15 +8,39 @@ package inject
 import (
 	"github.com/google/wire"
 
+	"github.com/Lofanmi/gobana/internal/svc_impls/svc_aggregation_parser"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_config"
+	"github.com/Lofanmi/gobana/internal/svc_impls/svc_log_parser"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_logger"
+	"github.com/Lofanmi/gobana/internal/svc_impls/svc_lua_state"
+	"github.com/Lofanmi/gobana/internal/svc_impls/svc_provider_factory"
+	"github.com/Lofanmi/gobana/internal/svc_impls/svc_qq_wry"
+	"github.com/Lofanmi/gobana/internal/svc_impls/svc_query_builder"
 	"github.com/Lofanmi/gobana/service"
 )
 
 var ServiceSet = wire.NewSet(
+	wire.Struct(new(svc_aggregation_parser.AggregationParser), "*"),
+	wire.Bind(new(service.AggregationParser), new(*svc_aggregation_parser.AggregationParser)),
+
 	wire.Struct(new(svc_config.Service), "*"),
 	wire.Bind(new(service.Config), new(*svc_config.Service)),
 
+	wire.Struct(new(svc_log_parser.LogParser), "*"),
+	wire.Bind(new(service.LogParser), new(*svc_log_parser.LogParser)),
+
 	wire.Struct(new(svc_logger.Service), "*"),
 	wire.Bind(new(service.Logger), new(*svc_logger.Service)),
+
+	wire.Struct(new(svc_lua_state.LuaState), "*"),
+	wire.Bind(new(service.LuaState), new(*svc_lua_state.LuaState)),
+
+	wire.Struct(new(svc_provider_factory.ProviderFactory), "*"),
+	wire.Bind(new(service.ProviderFactory), new(*svc_provider_factory.ProviderFactory)),
+
+	svc_qq_wry.NewQQWry,
+	wire.Bind(new(service.QQWry), new(*svc_qq_wry.QQWry)),
+
+	wire.Struct(new(svc_query_builder.QueryBuilder), "*"),
+	wire.Bind(new(service.QueryBuilder), new(*svc_query_builder.QueryBuilder)),
 )

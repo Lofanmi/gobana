@@ -1,24 +1,24 @@
-package logic_lua_state
+package svc_lua_state
 
 import (
 	"context"
 
-	"github.com/Lofanmi/gobana/internal/logic"
+	"github.com/Lofanmi/gobana/service"
 	lua "github.com/yuin/gopher-lua"
 )
 
 var (
-	_       logic.LuaState = &LuaState{}
-	exports                = map[string]func(state *LuaState) lua.LGFunction{
+	_       service.LuaState = &LuaState{}
+	exports                  = map[string]func(state *LuaState) lua.LGFunction{
 		"gobana_nginx_decode": luaNginxDecode,
 		"gobana_ip_location":  luaIPLocation,
 	}
 )
 
 // LuaState
-// @autowire(logic.LuaState,set=logics)
+// @autowire(service.LuaState,set=service)
 type LuaState struct {
-	QQWry logic.QQWry
+	QQWry service.QQWry
 }
 
 func (s *LuaState) GetLuaState() (L *lua.LState, fn func()) {

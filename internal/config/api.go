@@ -19,11 +19,7 @@ var (
 
 func GetConfig() Config {
 	once.Do(func() {
-		loaderConfig := LoaderConfig{
-			LocalPath: os.Getenv("LOCAL_PATH"),
-			LocalFile: os.Getenv("LOCAL_FILE"),
-		}
-		if err := DefaultLoader.Load(loaderConfig, &config); err != nil {
+		if err := DefaultLoader.Load(os.Getenv("CONFIG"), &config); err != nil {
 			panic(err)
 		}
 	})
@@ -45,10 +41,14 @@ func GetConfigQQWry() QQWry {
 	return result
 }
 
+// GetConfigProviders
+// @autowire(set=config)
+func GetConfigProviders() Providers { return GetConfig().Providers }
+
 // GetConfigBackends
 // @autowire(set=config)
-func GetConfigBackends() Backends {
-	result := GetConfig().Backends
-	// result.Default()
-	return result
-}
+func GetConfigBackends() Backends { return GetConfig().Backends }
+
+// GetConfigIndexes
+// @autowire(set=config)
+func GetConfigIndexes() Indexes { return GetConfig().Indexes }

@@ -2,7 +2,6 @@ package svc_config
 
 import (
 	"context"
-	"sort"
 
 	"github.com/Lofanmi/gobana/internal/config"
 	"github.com/Lofanmi/gobana/service"
@@ -13,11 +12,12 @@ var _ service.Config = &Service{}
 // Service
 // @autowire(service.Config,set=service)
 type Service struct {
-	BackendListConfig config.Backends
+	Backends config.Backends
+	Indexes  config.Indexes
 }
 
 func (s *Service) GetBackendList(ctx context.Context, req service.GetBackendListRequest) (resp service.GetBackendListResponse, err error) {
-	for backendName, backendConfig := range s.BackendListConfig {
+	for backendName, backendConfig := range s.Backends {
 		resp.BackendList = append(resp.BackendList, service.Backend{
 			Label: backendConfig.Label,
 			Value: backendName,
@@ -27,20 +27,15 @@ func (s *Service) GetBackendList(ctx context.Context, req service.GetBackendList
 }
 
 func (s *Service) GetStorageList(ctx context.Context, req service.GetStorageListRequest) (resp service.GetStorageListResponse, err error) {
-	backendConfig, ok := s.BackendListConfig[req.BackendName]
+	backendConfig, ok := s.Backends[req.BackendName]
 	if !ok {
 		return
 	}
-
-	var multiSearchList config.MultiSearchSlice
-	for _, multiSearch := range b.MultiSearch {
-		multiSearchList = append(multiSearchList, multiSearch)
-	}
-	sort.Sort(multiSearchList)
-	for _, multiSearch := range multiSearchList {
+	for _, index := range backendConfig.Indexes {
+		indexConfig := s.Indexes[index]
 		resp.StorageList = append(resp.StorageList, service.Storage{
-			Label: multiSearch.Name,
-			Value: multiSearch.Name,
+			Label: indexConfig.Label,
+			Value: indexConfig.Name,
 		})
 	}
 	return

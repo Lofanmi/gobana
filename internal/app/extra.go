@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GenStructGraph(in interface{}, filename string) {
+func GenStructGraph(in any, filename string) {
 	dot := structgraph.Draw(in)
 	if len(dot) == 0 {
 		return

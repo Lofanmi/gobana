@@ -1,13 +1,11 @@
-package logic
+package service
 
 import (
-	"github.com/Lofanmi/gobana/internal/config"
-	"github.com/Lofanmi/gobana/service"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/olivere/elastic/v7"
 )
 
-type SLSSearchResult struct {
+type SlsSearchResult struct {
 	ResponseCountByGetHistograms *sls.GetHistogramsResponse `json:"response_count_by_get_histograms"`
 	ResponseCountByGetLogs       *sls.GetLogsV3Response     `json:"response_count_by_get_logs"`
 	ResponseLog                  *sls.GetLogsV3Response     `json:"response_log"`
@@ -19,6 +17,6 @@ type SLSSearchResult struct {
 }
 
 type LogParser interface {
-	ParseElastic(backend config.BackendConfig, m map[string]*elastic.SearchResult) (total int, logs service.LogItems, err error)
-	ParseSLS(backend config.BackendConfig, m map[string]SLSSearchResult) (total int, logs service.LogItems, err error)
+	ParseElastic(backendName string, m map[string]*elastic.SearchResult) (total int, logs LogItems, err error)
+	ParseSLS(backendName string, m map[string]SlsSearchResult) (total int, logs LogItems, err error)
 }

@@ -38,21 +38,21 @@ type QueryByLucene struct {
 }
 
 type QueryBySLSQuery struct {
-	SLSQuery string `json:"sls_query"`
+	SlsQuery string `json:"sls_query"`
 }
 
 type SearchRequest struct {
-	PageNo         int         `json:"page_no"`
-	PageSize       int         `json:"page_size"`
-	TimeA          int64       `json:"time_a"`
-	TimeB          int64       `json:"time_b"`
-	Backend        string      `json:"backend"`
-	Storage        string      `json:"storage"`
-	QueryBy        string      `json:"query_by"`
-	Query          interface{} `json:"query"`
-	ChartInterval  int32       `json:"chart_interval"`
-	ChartVisible   bool        `json:"chart_visible"`
-	TrackTotalHits bool        `json:"track_total_hits"`
+	PageNo         int    `json:"page_no"`
+	PageSize       int    `json:"page_size"`
+	TimeA          int64  `json:"time_a"`
+	TimeB          int64  `json:"time_b"`
+	Backend        string `json:"backend"`
+	Storage        string `json:"storage"`
+	QueryBy        string `json:"query_by"`
+	Query          any    `json:"query"`
+	ChartInterval  int    `json:"chart_interval"`
+	ChartVisible   bool   `json:"chart_visible"`
+	TrackTotalHits bool   `json:"track_total_hits"`
 }
 
 type SearchResponse struct {
@@ -63,7 +63,7 @@ type SearchResponse struct {
 	Count    int          `json:"count"`
 	List     []LogItem    `json:"list"`
 	Charts   SearchCharts `json:"charts"`
-	RawQuery interface{}  `json:"raw_query"`
+	RawQuery any          `json:"raw_query"`
 }
 
 type LogType = string
@@ -76,59 +76,59 @@ const (
 
 type Log interface {
 	*AccessLog | *JsonLog | *StringLog
-	GetSource() interface{}
-	SetSource(v interface{})
+	GetSource() any
+	SetSource(v any)
 	Finish()
 }
 
 type AccessLog struct {
-	RequestID     string      `json:"request_id"`
-	Time          string      `json:"time"`
-	Method        string      `json:"method"`
-	Scheme        string      `json:"scheme"`
-	Hostname      string      `json:"hostname"`
-	URI           string      `json:"uri"`
-	HttpHost      string      `json:"http_host"`
-	Query         string      `json:"query"`
-	Body          string      `json:"body"`
-	Duration      string      `json:"duration"`
-	HttpVersion   string      `json:"http_version"`
-	UserAgent     string      `json:"user_agent"`
-	Referer       string      `json:"referer"`
-	XForwardedFor string      `json:"x_forwarded_for"`
-	Cookie        string      `json:"cookie"`
-	RemoteAddr    string      `json:"remote_addr"`
-	IPLocation    string      `json:"ip_location"`
-	Status        int         `json:"status"`
-	Message       string      `json:"message"`
-	CurlTemplate  string      `json:"curl_template"`
-	Source        interface{} `json:"source"`
+	RequestID     string `json:"request_id"`
+	Time          string `json:"time"`
+	Method        string `json:"method"`
+	Scheme        string `json:"scheme"`
+	Hostname      string `json:"hostname"`
+	URI           string `json:"uri"`
+	HttpHost      string `json:"http_host"`
+	Query         string `json:"query"`
+	Body          string `json:"body"`
+	Duration      string `json:"duration"`
+	HttpVersion   string `json:"http_version"`
+	UserAgent     string `json:"user_agent"`
+	Referer       string `json:"referer"`
+	XForwardedFor string `json:"x_forwarded_for"`
+	Cookie        string `json:"cookie"`
+	RemoteAddr    string `json:"remote_addr"`
+	IPLocation    string `json:"ip_location"`
+	Status        int    `json:"status"`
+	Message       string `json:"message"`
+	CurlTemplate  string `json:"curl_template"`
+	Source        any    `json:"source"`
 }
 
 type JsonLog struct {
-	RequestID string      `json:"request_id"`
-	Time      string      `json:"time"`
-	Level     string      `json:"level"`
-	Hostname  string      `json:"hostname"`
-	Path      string      `json:"path"`
-	Tag       string      `json:"tag"`
-	Message   string      `json:"message"`
-	Source    interface{} `json:"source"`
+	RequestID string `json:"request_id"`
+	Time      string `json:"time"`
+	Level     string `json:"level"`
+	Hostname  string `json:"hostname"`
+	Path      string `json:"path"`
+	Tag       string `json:"tag"`
+	Message   string `json:"message"`
+	Source    any    `json:"source"`
 }
 
 type StringLog struct {
-	Time     string      `json:"time"`
-	Hostname string      `json:"hostname"`
-	Path     string      `json:"path"`
-	Message  string      `json:"message"`
-	Source   interface{} `json:"source"`
+	Time     string `json:"time"`
+	Hostname string `json:"hostname"`
+	Path     string `json:"path"`
+	Message  string `json:"message"`
+	Source   any    `json:"source"`
 }
 
 type LogItem struct {
-	Timestamp int64       `json:"-"`
-	Storage   string      `json:"storage"`
-	LogType   LogType     `json:"log_type"`
-	Log       interface{} `json:"log"`
+	Timestamp int64   `json:"-"`
+	Storage   string  `json:"storage"`
+	LogType   LogType `json:"log_type"`
+	Log       any     `json:"log"`
 }
 
 type SearchCharts struct {
@@ -147,14 +147,14 @@ type SearchChartsSeries struct {
 }
 
 type ExportRequest struct {
-	Size    int64       `json:"size"`
-	TimeA   int64       `json:"time_a"`
-	TimeB   int64       `json:"time_b"`
-	Backend string      `json:"backend"`
-	Store   string      `json:"store"`
-	QueryBy int         `json:"query_by"`
-	Query   interface{} `json:"query"`
-	Param   interface{} `json:"param"`
+	Size    int64  `json:"size"`
+	TimeA   int64  `json:"time_a"`
+	TimeB   int64  `json:"time_b"`
+	Backend string `json:"backend"`
+	Store   string `json:"store"`
+	QueryBy int    `json:"query_by"`
+	Query   any    `json:"query"`
+	Param   any    `json:"param"`
 }
 
 type ExportResponse struct {
@@ -162,12 +162,12 @@ type ExportResponse struct {
 	Logs string `json:"logs"`
 }
 
-func (s *AccessLog) GetSource() interface{}  { return s.Source }
-func (s *AccessLog) SetSource(v interface{}) { s.Source = v }
-func (s *JsonLog) GetSource() interface{}    { return s.Source }
-func (s *JsonLog) SetSource(v interface{})   { s.Source = v }
-func (s *StringLog) GetSource() interface{}  { return s.Source }
-func (s *StringLog) SetSource(v interface{}) { s.Source = v }
+func (s *AccessLog) GetSource() any  { return s.Source }
+func (s *AccessLog) SetSource(v any) { s.Source = v }
+func (s *JsonLog) GetSource() any    { return s.Source }
+func (s *JsonLog) SetSource(v any)   { s.Source = v }
+func (s *StringLog) GetSource() any  { return s.Source }
+func (s *StringLog) SetSource(v any) { s.Source = v }
 
 func (s *AccessLog) Finish() {
 	s.Time = formatTime(s.Time)

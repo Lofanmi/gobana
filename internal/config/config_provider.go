@@ -1,23 +1,12 @@
 package config
 
-// ---------------------------------------------------------------------------------------------------------------------
-
-type ProviderName = string
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-type ProviderType = string
-
-const (
-	ProviderTypeSls           ProviderType = "sls"
-	ProviderTypeSlsProxy      ProviderType = "sls_proxy"
-	ProviderTypeElasticsearch ProviderType = "elasticsearch"
-	ProviderTypeKibanaProxy   ProviderType = "kibana_proxy"
+import (
+	"github.com/Lofanmi/gobana/service"
 )
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-type Providers map[ProviderName]ProviderConfig
+type Providers map[service.ProviderName]ProviderConfig
 
 func (s Providers) Match(name string) (res ProviderConfig) {
 	res, _ = s[name]
@@ -36,11 +25,11 @@ func (s Providers) Default() {
 // ---------------------------------------------------------------------------------------------------------------------
 
 type ProviderConfig struct {
-	Label              string       `json:"label"`                 // 用于前端展示
-	Name               ProviderName `json:"name"`                  // 名称
-	Type               ProviderType `json:"type"`                  // 后端类型
-	TimeoutMillisecond int64        `json:"timeout,omitempty"`     // 请求超时时间（毫秒）
-	AuthConfig         AuthConfig   `json:"auth_config,omitempty"` // 后端认证配置
+	Label              string               `json:"label"`                 // 用于前端展示
+	Name               service.ProviderName `json:"name"`                  // 名称
+	Type               service.ProviderType `json:"type"`                  // 后端类型
+	TimeoutMillisecond int64                `json:"timeout,omitempty"`     // 请求超时时间（毫秒）
+	AuthConfig         AuthConfig           `json:"auth_config,omitempty"` // 后端认证配置
 }
 
 func (s *ProviderConfig) Default() {
@@ -55,7 +44,7 @@ func (s *ProviderConfig) Default() {
 
 func (s *ProviderConfig) authIfNeeded() (err error) {
 	switch s.Type {
-	case ProviderTypeKibanaProxy:
+	case service.ProviderTypeKibanaProxy:
 		err = s.AuthConfig.AuthForKibanaProxy.init()
 	}
 	return

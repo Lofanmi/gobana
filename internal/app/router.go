@@ -66,7 +66,7 @@ func (s *Application) registerApiRouter(router gin.IRoutes) {
 	})
 }
 
-func (s *Application) output(c *gin.Context, resp interface{}, err error) {
+func (s *Application) output(c *gin.Context, resp any, err error) {
 	code, message := 0, "成功"
 	if err != nil {
 		code = 1

@@ -261,63 +261,63 @@
 <path fill="none" stroke="black" d="M1449.58,-587.6C1434.52,-579.25 1418.15,-570.23 1403,-562 1390.24,-555.07 1376.61,-547.76 1363.43,-540.73"/>
 <polygon fill="black" stroke="black" points="1365.27,-537.74 1354.8,-536.13 1361.98,-543.92 1365.27,-537.74"/>
 </g>
-<!-- logic_backend_factory.BackendFactory -->
+<!-- svc_provider_factory.BackendFactory -->
 <g id="node16" class="node">
 <title>logic_backend_factory.BackendFactory</title>
 <polygon fill="#b7d3ff" stroke="black" points="1328.5,-367 901.5,-367 901.5,-371 889.5,-371 889.5,-303 1328.5,-303 1328.5,-367"/>
 <polyline fill="none" stroke="black" points="889.5,-367 901.5,-367"/>
 <text text-anchor="middle" x="1109" y="-329" font-family="Times,serif" font-size="25.00">logic_backend_factory.BackendFactory</text>
 </g>
-<!-- logic.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory -->
+<!-- logic.BackendFactory&#45;&gt;svc_provider_factory.BackendFactory -->
 <g id="edge15" class="edge">
 <title>logic.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M1256.28,-468.79C1226.39,-441.85 1183.67,-403.32 1151.93,-374.7"/>
 <polygon fill="black" stroke="black" points="1154.59,-372.4 1144.82,-368.3 1149.9,-377.59 1154.59,-372.4"/>
 <text text-anchor="middle" x="1245" y="-439.8" font-family="Times,serif" font-size="14.00">impl</text>
 </g>
-<!-- logic_backend_factory.BackendFactory:BackendListConfig (config.BackendList) -->
+<!-- svc_provider_factory.BackendFactory:BackendListConfig (config.BackendList) -->
 <g id="node17" class="node">
 <title>logic_backend_factory.BackendFactory:BackendListConfig (config.BackendList)</title>
 <polygon fill="#f0bca2" stroke="black" points="817.5,-266 428.5,-266 428.5,-207 817.5,-207 817.5,-266"/>
 <text text-anchor="middle" x="623" y="-231" font-family="Times,serif" font-size="21.25">BackendListConfig (config.BackendList)</text>
 </g>
-<!-- logic_backend_factory.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory:BackendListConfig (config.BackendList) -->
+<!-- svc_provider_factory.BackendFactory&#45;&gt;svc_provider_factory.BackendFactory:BackendListConfig (config.BackendList) -->
 <g id="edge16" class="edge">
 <title>logic_backend_factory.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory:BackendListConfig (config.BackendList)</title>
 <path fill="none" stroke="black" d="M950.54,-302.54C895.06,-291.52 832.86,-279.17 777.7,-268.22"/>
 <ellipse fill="black" stroke="black" cx="773.32" cy="-267.35" rx="4" ry="4"/>
 </g>
-<!-- logic_backend_factory.BackendFactory:m (map[string]interface {}) -->
+<!-- svc_provider_factory.BackendFactory:m (map[string]interface {}) -->
 <g id="node18" class="node">
 <title>logic_backend_factory.BackendFactory:m (map[string]interface {})</title>
 <polygon fill="#f0bca2" stroke="black" points="1106.5,-266 835.5,-266 835.5,-207 1106.5,-207 1106.5,-266"/>
 <text text-anchor="middle" x="971" y="-231" font-family="Times,serif" font-size="21.25">m (map[string]interface {})</text>
 </g>
-<!-- logic_backend_factory.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory:m (map[string]interface {}) -->
+<!-- svc_provider_factory.BackendFactory&#45;&gt;svc_provider_factory.BackendFactory:m (map[string]interface {}) -->
 <g id="edge17" class="edge">
 <title>logic_backend_factory.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory:m (map[string]interface {})</title>
 <path fill="none" stroke="black" d="M1064.2,-302.67C1049.86,-292.64 1033.92,-281.5 1019.34,-271.31"/>
 <ellipse fill="black" stroke="black" cx="1016" cy="-268.96" rx="4" ry="4"/>
 </g>
-<!-- logic_backend_factory.BackendFactory:mu -->
+<!-- svc_provider_factory.BackendFactory:mu -->
 <g id="node19" class="node">
 <title>logic_backend_factory.BackendFactory:mu</title>
 <polygon fill="#f0bca2" stroke="black" points="1189,-266 1125,-266 1125,-207 1189,-207 1189,-266"/>
 <text text-anchor="middle" x="1157" y="-231" font-family="Times,serif" font-size="21.25">mu</text>
 </g>
-<!-- logic_backend_factory.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory:mu -->
+<!-- svc_provider_factory.BackendFactory&#45;&gt;svc_provider_factory.BackendFactory:mu -->
 <g id="edge18" class="edge">
 <title>logic_backend_factory.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory:mu</title>
 <path fill="none" stroke="black" d="M1124.58,-302.67C1129.07,-293.65 1134.01,-283.72 1138.65,-274.39"/>
 <ellipse fill="black" stroke="black" cx="1140.63" cy="-270.41" rx="4" ry="4"/>
 </g>
-<!-- logic_backend_factory.BackendFactory:httpClient -->
+<!-- svc_provider_factory.BackendFactory:httpClient -->
 <g id="node21" class="node">
 <title>logic_backend_factory.BackendFactory:httpClient</title>
 <polygon fill="#f0bca2" stroke="black" points="1329,-266 1207,-266 1207,-207 1329,-207 1329,-266"/>
 <text text-anchor="middle" x="1268" y="-231" font-family="Times,serif" font-size="21.25">httpClient</text>
 </g>
-<!-- logic_backend_factory.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory:httpClient -->
+<!-- svc_provider_factory.BackendFactory&#45;&gt;svc_provider_factory.BackendFactory:httpClient -->
 <g id="edge20" class="edge">
 <title>logic_backend_factory.BackendFactory&#45;&gt;logic_backend_factory.BackendFactory:httpClient</title>
 <path fill="none" stroke="black" d="M1160.62,-302.67C1177.29,-292.55 1195.84,-281.3 1212.76,-271.03"/>
@@ -331,7 +331,7 @@
 <polyline fill="none" stroke="black" points="1205.5,-134 1199.5,-134"/>
 <text text-anchor="middle" x="1137" y="-115.2" font-family="Times,serif" font-size="26.00">sync.Mutex</text>
 </g>
-<!-- logic_backend_factory.BackendFactory:mu&#45;&gt;sync.Mutex -->
+<!-- svc_provider_factory.BackendFactory:mu&#45;&gt;sync.Mutex -->
 <g id="edge19" class="edge">
 <title>logic_backend_factory.BackendFactory:mu&#45;&gt;sync.Mutex</title>
 <path fill="none" stroke="black" d="M1151.9,-206.69C1148.89,-189.69 1145.1,-168.25 1142.09,-151.25"/>
@@ -345,7 +345,7 @@
 <polyline fill="none" stroke="black" points="1352,-134 1346,-134"/>
 <text text-anchor="middle" x="1288" y="-115.2" font-family="Times,serif" font-size="26.00">http.Client</text>
 </g>
-<!-- logic_backend_factory.BackendFactory:httpClient&#45;&gt;http.Client -->
+<!-- svc_provider_factory.BackendFactory:httpClient&#45;&gt;http.Client -->
 <g id="edge21" class="edge">
 <title>logic_backend_factory.BackendFactory:httpClient&#45;&gt;http.Client</title>
 <path fill="none" stroke="black" d="M1273.1,-206.69C1276.11,-189.69 1279.9,-168.25 1282.91,-151.25"/>
@@ -365,7 +365,7 @@
 <path fill="none" stroke="black" d="M1681.07,-587.79C1674.95,-574.5 1667.67,-558.7 1661.06,-544.35"/>
 <polygon fill="black" stroke="black" points="1664.38,-543.21 1657.02,-535.59 1658.03,-546.14 1664.38,-543.21"/>
 </g>
-<!-- logic_query_builder.QueryBuilder -->
+<!-- svc_query_builder.QueryBuilder -->
 <g id="node25" class="node">
 <title>logic_query_builder.QueryBuilder</title>
 <polygon fill="#d4f9d1" stroke="black" points="1737,-353 1379,-353 1379,-317 1743,-317 1743,-347 1737,-353"/>
@@ -373,7 +373,7 @@
 <polyline fill="none" stroke="black" points="1743,-347 1737,-347"/>
 <text text-anchor="middle" x="1561" y="-329" font-family="Times,serif" font-size="25.00">logic_query_builder.QueryBuilder</text>
 </g>
-<!-- logic.QueryBuilder&#45;&gt;logic_query_builder.QueryBuilder -->
+<!-- logic.QueryBuilder&#45;&gt;svc_query_builder.QueryBuilder -->
 <g id="edge24" class="edge">
 <title>logic.QueryBuilder&#45;&gt;logic_query_builder.QueryBuilder</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M1626.57,-469.58C1611.51,-438.9 1588.83,-392.69 1574.48,-363.45"/>
@@ -394,27 +394,27 @@
 <path fill="none" stroke="black" d="M1873.5,-587.79C1880.32,-574.5 1888.43,-558.7 1895.79,-544.35"/>
 <polygon fill="black" stroke="black" points="1898.84,-546.06 1900.29,-535.56 1892.62,-542.86 1898.84,-546.06"/>
 </g>
-<!-- logic_log_parser.LogParser -->
+<!-- svc_log_parser.LogParser -->
 <g id="node28" class="node">
 <title>logic_log_parser.LogParser</title>
 <polygon fill="#b7d3ff" stroke="black" points="2107,-367 1805,-367 1805,-371 1793,-371 1793,-303 2107,-303 2107,-367"/>
 <polyline fill="none" stroke="black" points="1793,-367 1805,-367"/>
 <text text-anchor="middle" x="1950" y="-329" font-family="Times,serif" font-size="25.00">logic_log_parser.LogParser</text>
 </g>
-<!-- logic.LogParser&#45;&gt;logic_log_parser.LogParser -->
+<!-- logic.LogParser&#45;&gt;svc_log_parser.LogParser -->
 <g id="edge27" class="edge">
 <title>logic.LogParser&#45;&gt;logic_log_parser.LogParser</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M1923.28,-469.58C1928.45,-443.77 1935.8,-406.98 1941.49,-378.54"/>
 <polygon fill="black" stroke="black" points="1944.91,-379.28 1943.44,-368.79 1938.05,-377.91 1944.91,-379.28"/>
 <text text-anchor="middle" x="1942" y="-439.8" font-family="Times,serif" font-size="14.00">impl</text>
 </g>
-<!-- logic_log_parser.LogParser:LuaState -->
+<!-- svc_log_parser.LogParser:LuaState -->
 <g id="node29" class="node">
 <title>logic_log_parser.LogParser:LuaState</title>
 <polygon fill="#f0bca2" stroke="black" points="2006.5,-266 1893.5,-266 1893.5,-207 2006.5,-207 2006.5,-266"/>
 <text text-anchor="middle" x="1950" y="-231" font-family="Times,serif" font-size="21.25">LuaState</text>
 </g>
-<!-- logic_log_parser.LogParser&#45;&gt;logic_log_parser.LogParser:LuaState -->
+<!-- svc_log_parser.LogParser&#45;&gt;svc_log_parser.LogParser:LuaState -->
 <g id="edge28" class="edge">
 <title>logic_log_parser.LogParser&#45;&gt;logic_log_parser.LogParser:LuaState</title>
 <path fill="none" stroke="black" d="M1950,-302.67C1950,-293.92 1950,-284.32 1950,-275.24"/>
@@ -428,13 +428,13 @@
 <polyline fill="none" stroke="black" points="1855.5,-96 1859.5,-96 1859.5,-92 1855.5,-92"/>
 <text text-anchor="middle" x="1950" y="-115.2" font-family="Times,serif" font-size="26.00">logic.LuaState</text>
 </g>
-<!-- logic_log_parser.LogParser:LuaState&#45;&gt;logic.LuaState -->
+<!-- svc_log_parser.LogParser:LuaState&#45;&gt;logic.LuaState -->
 <g id="edge29" class="edge">
 <title>logic_log_parser.LogParser:LuaState&#45;&gt;logic.LuaState</title>
 <path fill="none" stroke="black" d="M1950,-206.69C1950,-194.56 1950,-180.15 1950,-166.72"/>
 <polygon fill="black" stroke="black" points="1953.5,-166.76 1950,-156.76 1946.5,-166.76 1953.5,-166.76"/>
 </g>
-<!-- logic_lua_state.LuaState -->
+<!-- svc_lua_state.LuaState -->
 <g id="node31" class="node">
 <title>logic_lua_state.LuaState</title>
 <polygon fill="#d4f9d1" stroke="black" points="2079.5,-37 1814.5,-37 1814.5,0 2085.5,0 2085.5,-31 2079.5,-37"/>
@@ -442,7 +442,7 @@
 <polyline fill="none" stroke="black" points="2085.5,-31 2079.5,-31"/>
 <text text-anchor="middle" x="1950" y="-12.2" font-family="Times,serif" font-size="26.00">logic_lua_state.LuaState</text>
 </g>
-<!-- logic.LuaState&#45;&gt;logic_lua_state.LuaState -->
+<!-- logic.LuaState&#45;&gt;svc_lua_state.LuaState -->
 <g id="edge30" class="edge">
 <title>logic.LuaState&#45;&gt;logic_lua_state.LuaState</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M1950,-87.71C1950,-75.18 1950,-60.99 1950,-48.8"/>
@@ -463,7 +463,7 @@
 <path fill="none" stroke="black" d="M2112.44,-587.63C2146.66,-572.67 2188.14,-554.54 2223.92,-538.89"/>
 <polygon fill="black" stroke="black" points="2225.18,-542.16 2232.94,-534.94 2222.38,-535.74 2225.18,-542.16"/>
 </g>
-<!-- logic_aggregation_parser.AggregationParser -->
+<!-- svc_aggregation_parser.AggregationParser -->
 <g id="node34" class="node">
 <title>logic_aggregation_parser.AggregationParser</title>
 <polygon fill="#d4f9d1" stroke="black" points="2618.5,-353 2157.5,-353 2157.5,-317 2624.5,-317 2624.5,-347 2618.5,-353"/>
@@ -471,7 +471,7 @@
 <polyline fill="none" stroke="black" points="2624.5,-347 2618.5,-347"/>
 <text text-anchor="middle" x="2391" y="-329" font-family="Times,serif" font-size="25.00">logic_aggregation_parser.AggregationParser</text>
 </g>
-<!-- logic.AggregationParser&#45;&gt;logic_aggregation_parser.AggregationParser -->
+<!-- logic.AggregationParser&#45;&gt;svc_aggregation_parser.AggregationParser -->
 <g id="edge33" class="edge">
 <title>logic.AggregationParser&#45;&gt;logic_aggregation_parser.AggregationParser</title>
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M2322.19,-469.58C2338.06,-438.76 2362.01,-392.28 2377.06,-363.06"/>

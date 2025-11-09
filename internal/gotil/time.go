@@ -21,7 +21,7 @@ func ParseTime(s string) (timestamp int64) {
 	return
 }
 
-func MapToTable(m map[string]interface{}) *lua.LTable {
+func MapToTable(m map[string]any) *lua.LTable {
 	resultTable := &lua.LTable{}
 	for key, element := range m {
 		switch res := element.(type) {
@@ -33,14 +33,14 @@ func MapToTable(m map[string]interface{}) *lua.LTable {
 			resultTable.RawSetString(key, lua.LBool(res))
 		case []byte:
 			resultTable.RawSetString(key, lua.LString(res))
-		case map[string]interface{}:
+		case map[string]any:
 			t := MapToTable(res)
 			resultTable.RawSetString(key, t)
-		case []interface{}:
+		case []any:
 			sliceTable := &lua.LTable{}
 			for _, s := range res {
 				switch res2 := s.(type) {
-				case map[string]interface{}:
+				case map[string]any:
 					t := MapToTable(res2)
 					sliceTable.Append(t)
 				case float64, float32, int64, int32, int16, int8, uint, uint64, uint32, uint16, uint8:

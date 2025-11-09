@@ -16,6 +16,7 @@ type AuthConfig struct {
 }
 
 type AuthForSls struct {
+	Endpoint        string `json:"endpoint"`
 	AccessKeyID     string `json:"access_key_id"`
 	AccessKeySecret string `json:"access_key_secret"`
 }
@@ -24,6 +25,7 @@ type AuthForSlsProxy struct {
 }
 
 type AuthForElasticsearch struct {
+	URL      string `json:"url"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }

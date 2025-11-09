@@ -1,21 +1,21 @@
-package logic_aggregation_parser
+package svc_aggregation_parser
 
 import (
 	"strconv"
 
 	"github.com/Lofanmi/gobana/internal/gotil"
-	"github.com/Lofanmi/gobana/internal/logic"
+	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
 	"github.com/spf13/cast"
 	"github.com/wangjia184/sortedset"
 )
 
 var (
-	_ logic.AggregationParser = &AggregationParser{}
+	_ service.AggregationParser = &AggregationParser{}
 )
 
 // AggregationParser
-// @autowire(logic.AggregationParser,set=logics)
+// @autowire(service.AggregationParser,set=service)
 type AggregationParser struct {
 }
 
@@ -39,7 +39,7 @@ func (s *AggregationParser) ParseElastic(timeA, timeB, interval int64, m map[str
 	return
 }
 
-func (s *AggregationParser) ParseSLS(timeA, timeB, interval int64, m map[string]logic.SLSSearchResult) (xAxis []string, yAxis []int64, err error) {
+func (s *AggregationParser) ParseSLS(timeA, timeB, interval int64, m map[string]service.SlsSearchResult) (xAxis []string, yAxis []int64, err error) {
 	ms := timeA % 1000
 	xAxis, yAxis, err = s.parse(timeA, timeB, interval, func(set *sortedset.SortedSet) {
 		for _, item := range m {

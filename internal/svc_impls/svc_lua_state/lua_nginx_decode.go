@@ -1,4 +1,4 @@
-package logic_lua_state
+package svc_lua_state
 
 import (
 	"strings"
