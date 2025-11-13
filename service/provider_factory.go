@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/aliyun/aliyun-log-go-sdk"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/olivere/elastic/v7"
 )
 

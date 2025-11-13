@@ -4,86 +4,63 @@ import (
 	"strconv"
 
 	"github.com/Lofanmi/gobana/internal/config"
-	"github.com/Lofanmi/gobana/internal/gotil"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/olivere/elastic/v7"
 )
 
-func (s *QueryBuilder) queryByHumanElastic(backendConfig config.BackendConfig, req service.SearchRequest, query service.QueryByHuman) (queries map[string]elastic.Query, aggregations map[string]elastic.Aggregation) {
+func (s *QueryBuilder) queryByHumanElastic(indexName string, req service.SearchRequest, query service.QueryByHuman) (queryRes elastic.Query, aggregationRes elastic.Aggregation) {
 	if len(query.Or) <= 0 && len(query.Must) <= 0 && len(query.MustNot) <= 0 {
 		return
 	}
-
-	queries = map[string]elastic.Query{}
-	aggregations = map[string]elastic.Aggregation{}
-
-	for _, indexName := range backendConfig.Indexes {
-		defaultFields := gotil.OrSliceDefault(backendConfig.DefaultFields[indexName], backendConfig.DefaultFields[service.DefaultValue])
-		timeField := gotil.OrDefault(backendConfig.TimeField[indexName], backendConfig.TimeField[service.DefaultValue], service.AtTimestamp)
-		timezone := gotil.OrDefault(backendConfig.Timezone[indexName], backendConfig.Timezone[service.DefaultValue], s.ApplicationConfig.Timezone)
-
-		esMainQuery := elastic.NewBoolQuery()
-		emptyCondition := true
-		TimeQuery(timeField, req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Must(query) })
-		OrQueries(defaultFields, query.Or, &emptyCondition, func(orQueries []elastic.Query) {
-			esMainQuery.Should(orQueries...).MinimumNumberShouldMatch(1)
-		})
-		MustOrMustNotQueries(defaultFields, query.Must, &emptyCondition, func(query elastic.Query) { esMainQuery.Must(query) })
-		MustOrMustNotQueries(defaultFields, query.MustNot, &emptyCondition, func(query elastic.Query) { esMainQuery.MustNot(query) })
-		if emptyCondition {
-			queries[indexName] = esMainQuery
-			continue
-		}
-
-		buildInQuery, ok := backendConfig.BuildInQuery[indexName]
-		if !ok {
-			buildInQuery = backendConfig.BuildInQuery[service.DefaultValue]
-		}
-		MustOrMustNotBuildInQueryEntry(buildInQuery.Must, func(query elastic.Query) { esMainQuery.Must(query) })
-		MustOrMustNotBuildInQueryEntry(buildInQuery.MustNot, func(query elastic.Query) { esMainQuery.MustNot(query) })
-		OrBuildInQueryEntry(buildInQuery.Or, func(orQueries []elastic.Query) {
-			esMainQuery.Should(orQueries...).MinimumNumberShouldMatch(1)
-		})
-		queries[indexName] = esMainQuery
-
-		if req.ChartVisible {
-			aggregations[indexName] = elastic.NewDateHistogramAggregation().
-				Field(timeField).
-				FixedInterval(strconv.Itoa(req.ChartInterval) + "s").
-				TimeZone(timezone).
-				MinDocCount(0)
-		}
+	index, exist := s.Indexes[indexName]
+	if !exist {
+		return
 	}
+	indexMeta := index.Meta.IndexMetaForElastic
 
+	esMainQuery := elastic.NewBoolQuery()
+	emptyCondition := true
+	TimeQuery(indexMeta.TimeField, req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Must(query) })
+	OrQueries(index.DefaultFields, query.Or, &emptyCondition, func(orQueries []elastic.Query) {
+		esMainQuery.Should(orQueries...).MinimumNumberShouldMatch(1)
+	})
+	MustOrMustNotQueries(index.DefaultFields, query.Must, &emptyCondition, func(query elastic.Query) { esMainQuery.Must(query) })
+	MustOrMustNotQueries(index.DefaultFields, query.MustNot, &emptyCondition, func(query elastic.Query) { esMainQuery.MustNot(query) })
+	if emptyCondition {
+		queryRes = esMainQuery
+		return
+	}
+	MustOrMustNotBuildInQueryEntry(index.BuildInQuery.Must, func(query elastic.Query) { esMainQuery.Must(query) })
+	MustOrMustNotBuildInQueryEntry(index.BuildInQuery.MustNot, func(query elastic.Query) { esMainQuery.MustNot(query) })
+	OrBuildInQueryEntry(index.BuildInQuery.Or, func(orQueries []elastic.Query) {
+		esMainQuery.Should(orQueries...).MinimumNumberShouldMatch(1)
+	})
+
+	queryRes = esMainQuery
+	if req.ChartVisible {
+		aggregationRes = elastic.NewDateHistogramAggregation().Field(indexMeta.TimeField).FixedInterval(strconv.Itoa(req.ChartInterval) + "s").TimeZone(indexMeta.Timezone).MinDocCount(0)
+	}
 	return
 }
 
-func (s *QueryBuilder) queryByLuceneElastic(backendConfig config.BackendConfig, req service.SearchRequest, query service.QueryByLucene) (queries map[string]elastic.Query, aggregations map[string]elastic.Aggregation) {
+func (s *QueryBuilder) queryByLuceneElastic(indexName string, req service.SearchRequest, query service.QueryByLucene) (queryRes elastic.Query, aggregationRes elastic.Aggregation) {
 	if len(query.Lucene) <= 0 {
 		return
 	}
-
-	queries = map[string]elastic.Query{}
-	aggregations = map[string]elastic.Aggregation{}
-
-	for _, indexName := range backendConfig.Indexes {
-		timeField := gotil.OrDefault(backendConfig.TimeField[indexName], backendConfig.TimeField[service.DefaultValue], service.AtTimestamp)
-		timezone := gotil.OrDefault(backendConfig.Timezone[indexName], backendConfig.Timezone[service.DefaultValue], s.ApplicationConfig.Timezone)
-
-		esMainQuery := elastic.NewBoolQuery()
-		TimeQuery(timeField, req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Filter(query) })
-		esMainQuery.Filter(elastic.NewQueryStringQuery(query.Lucene))
-		queries[indexName] = esMainQuery
-
-		if req.ChartVisible {
-			aggregations[indexName] = elastic.NewDateHistogramAggregation().
-				Field(timeField).
-				FixedInterval(strconv.Itoa(req.ChartInterval) + "s").
-				TimeZone(timezone).
-				MinDocCount(0)
-		}
+	index, exist := s.Indexes[indexName]
+	if !exist {
+		return
 	}
+	indexMeta := index.Meta.IndexMetaForElastic
 
+	esMainQuery := elastic.NewBoolQuery()
+	TimeQuery(indexMeta.TimeField, req.TimeA, req.TimeB, func(query elastic.Query) { esMainQuery.Filter(query) })
+	esMainQuery.Filter(elastic.NewQueryStringQuery(query.Lucene))
+
+	queryRes = esMainQuery
+	if req.ChartVisible {
+		aggregationRes = elastic.NewDateHistogramAggregation().Field(indexMeta.TimeField).FixedInterval(strconv.Itoa(req.ChartInterval) + "s").TimeZone(indexMeta.Timezone).MinDocCount(0)
+	}
 	return
 }
 

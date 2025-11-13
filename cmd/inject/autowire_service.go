@@ -8,9 +8,7 @@ package inject
 import (
 	"github.com/google/wire"
 
-	"github.com/Lofanmi/gobana/internal/svc_impls/svc_aggregation_parser"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_config"
-	"github.com/Lofanmi/gobana/internal/svc_impls/svc_log_parser"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_logger"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_lua_state"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_provider_factory"
@@ -20,14 +18,14 @@ import (
 )
 
 var ServiceSet = wire.NewSet(
-	wire.Struct(new(svc_aggregation_parser.AggregationParser), "*"),
-	wire.Bind(new(service.AggregationParser), new(*svc_aggregation_parser.AggregationParser)),
+	wire.Struct(new(svc_logger.AggregationParser), "*"),
+	wire.Bind(new(service.AggregationParser), new(*svc_logger.AggregationParser)),
 
 	wire.Struct(new(svc_config.Service), "*"),
 	wire.Bind(new(service.Config), new(*svc_config.Service)),
 
-	wire.Struct(new(svc_log_parser.LogParser), "*"),
-	wire.Bind(new(service.LogParser), new(*svc_log_parser.LogParser)),
+	wire.Struct(new(svc_logger.LogParser), "*"),
+	wire.Bind(new(service.LogParser), new(*svc_logger.LogParser)),
 
 	wire.Struct(new(svc_logger.Service), "*"),
 	wire.Bind(new(service.Logger), new(*svc_logger.Service)),

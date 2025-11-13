@@ -9,9 +9,7 @@ package inject
 import (
 	"github.com/Lofanmi/gobana/internal/app"
 	"github.com/Lofanmi/gobana/internal/config"
-	"github.com/Lofanmi/gobana/internal/svc_impls/svc_aggregation_parser"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_config"
-	"github.com/Lofanmi/gobana/internal/svc_impls/svc_log_parser"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_logger"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_lua_state"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_provider_factory"
@@ -46,11 +44,11 @@ func NewApplication() (*app.Application, func(), error) {
 	luaState := &svc_lua_state.LuaState{
 		QQWry: svc_qq_wryQQWry,
 	}
-	logParser := &svc_log_parser.LogParser{
+	logParser := &svc_logger.LogParser{
 		Backends: backends,
 		LuaState: luaState,
 	}
-	aggregationParser := &svc_aggregation_parser.AggregationParser{}
+	aggregationParser := &svc_logger.AggregationParser{}
 	svc_loggerService := &svc_logger.Service{
 		Indexes:           indexes,
 		Backends:          backends,
