@@ -1,4 +1,4 @@
-package svc_lua_state
+package svc_goja
 
 import (
 	"strings"
@@ -23,13 +23,15 @@ func string2Bytes(s string) []byte {
 }
 
 // nginxDecode nginx日志解析
-func nginxDecode(s string) string {
-	if s[0] != '{' {
-		return ""
+func nginxDecode(s string) (result string) {
+	if s == "" || s[0] != '{' {
+		return
 	}
 	s = strings.ReplaceAll(s, `\\x`, `\x`)
 	state := 0
 	buf := p.Get()
+	buf.Reset()
+	defer buf.Free()
 	data := string2Bytes(s)
 	length := len(data)
 	for i := 0; i < length; i++ {
@@ -51,6 +53,9 @@ func nginxDecode(s string) string {
 			}
 		default:
 			if state == 2 {
+				if i+1 >= length {
+					return
+				}
 				a, b := data[i], data[i+1]
 				i++
 				if a >= '0' && a <= '9' {
@@ -58,6 +63,8 @@ func nginxDecode(s string) string {
 				} else if a >= 'A' && a <= 'F' {
 					a -= 'A'
 					a += 10
+				} else {
+					a = 0
 				}
 				a *= 16
 				if b >= '0' && b <= '9' {
@@ -65,6 +72,8 @@ func nginxDecode(s string) string {
 				} else if b >= 'A' && b <= 'F' {
 					b -= 'A'
 					b += 10
+				} else {
+					b = 0
 				}
 				a += b
 				if a == '"' {
@@ -91,7 +100,6 @@ func nginxDecode(s string) string {
 			state = 0
 		}
 	}
-	s = buf.String()
-	buf.Free()
-	return s
+	result = buf.String()
+	return
 }

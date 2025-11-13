@@ -1,17 +1,13 @@
 package svc_logger
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/Lofanmi/gobana/internal/config"
-	"github.com/Lofanmi/gobana/internal/gotil"
-	"github.com/Lofanmi/gobana/internal/gotil/lua_json"
 	"github.com/Lofanmi/gobana/service"
-	"github.com/olivere/elastic/v7"
-	"github.com/tidwall/gjson"
+	"github.com/dop251/goja"
+	"github.com/spf13/cast"
 	"github.com/tidwall/sjson"
-	lua "github.com/yuin/gopher-lua"
 )
 
 func (s *Service) doParseSLS(indexName string, r service.SearchResultSls) (logs service.LogItems, err error) {
@@ -19,16 +15,11 @@ func (s *Service) doParseSLS(indexName string, r service.SearchResultSls) (logs 
 		return
 	}
 	index := s.Indexes[indexName]
-	for _, hit := range r.ResponseLog.Logs {
-		for k, v := range hit {
-			if v == "" || v == "null" {
-				delete(hit, k)
-			}
-		}
-		hit["_index"] = indexName
-		data, _ := json.Marshal(hit)
+	for _, _hit := range r.ResponseLog.Logs {
+		data := slsLogToMapStringAny(_hit)
+		data["_index"] = indexName
 		logItem := service.LogItem{Storage: index.Label}
-		if err = s.parseLogBytesSls(indexName, data, &logItem); err != nil {
+		if err = s.parseLogEntrySls(indexName, data, &logItem); err != nil {
 			return
 		}
 		logs = append(logs, logItem)
@@ -36,49 +27,35 @@ func (s *Service) doParseSLS(indexName string, r service.SearchResultSls) (logs 
 	return
 }
 
-func (s *Service) doParseElastic(indexName string, r *elastic.SearchResult) (logs service.LogItems, err error) {
-	if r == nil || r.Hits == nil {
-		return
-	}
-	index := s.Indexes[indexName]
-	for _, hit := range r.Hits.Hits {
-		data, _ := json.Marshal(hit)
-		logItem := service.LogItem{Storage: index.Label}
-		if err = s.parseLogBytesElastic(indexName, data, &logItem); err != nil {
-			return
-		}
-		logs = append(logs, logItem)
+func (s *Service) parseLogEntrySls(indexName string, data map[string]any, logItem *service.LogItem) (err error) {
+	*logItem = service.LogItem{
+		Timestamp: 0,
+		Log:       data,
 	}
 	return
 }
 
-func (s *Service) parseLogBytesSls(indexName string, data []byte, logItem *service.LogItem) (err error) {
-	hitMap := map[string]any{}
-	if err = json.Unmarshal(data, &hitMap); err != nil {
-		return
-	}
-	tb := gotil.MapToTable(hitMap)
-	var logInterface any
-	if _sourceString != "" {
-		data = []byte(_sourceString)
-		if err = json.Unmarshal(data, &hitMap); err != nil {
-			return
-		}
-	}
-	logItem = service.LogItem{
-		Timestamp: gotil.ParseTime(logTime),
-		LogType:   logType,
-		Log:       logInterface,
-	}
-	return
-}
+// func (s *Service) doParseElastic(indexName string, r *elastic.SearchResult) (logs service.LogItems, err error) {
+// 	if r == nil || r.Hits == nil {
+// 		return
+// 	}
+// 	index := s.Indexes[indexName]
+// 	for _, hit := range r.Hits.Hits {
+// 		logItem := service.LogItem{Storage: index.Label}
+// 		if err = s.parseLogEntryElastic(indexName, data, &logItem); err != nil {
+// 			return
+// 		}
+// 		logs = append(logs, logItem)
+// 	}
+// 	return
+// }
 
-func (s *Service) handleParserField(field *config.ParserField, g gjson.Result, targetJSON *string, _sourceTable *lua.LTable) {
+func (s *Service) parseFieldsFromGoJaObject(field *config.ParserField, data map[string]any, targetJSON *string, _sourceObject *goja.Object) {
 	switch field.Type {
 	case service.ParserFieldTypeReplacements:
 		var value string
 		for _, fromField := range field.FromFields {
-			value = g.Get(fromField).String()
+			value = cast.ToString(data[fromField])
 			if field.TrimSet != "" {
 				value = strings.Trim(value, field.TrimSet)
 			}
@@ -89,39 +66,36 @@ func (s *Service) handleParserField(field *config.ParserField, g gjson.Result, t
 		if newValue, err := sjson.Set(*targetJSON, field.ToField, value); err == nil {
 			*targetJSON = newValue
 		}
-	case service.ParserFieldTypeLua:
-		L, fn := s.GetLuaState()
-		lua_json.Preload(L)
-		defer fn()
-		for _, fromField := range field.FromFields {
-			value := g.Get(fromField).String()
-			if value == "" {
+	case service.ParserFieldTypeJavaScript:
+		vm := s.GoJa.GetRuntime()
+		for _, _fromField := range field.FromFields {
+			fromField := cast.ToString(data[_fromField])
+			if fromField == "" {
 				continue
 			}
-			if err := L.DoString(field.LuaField); err != nil {
+			program, err := goja.Compile("", field.JavaScriptField, false)
+			if err != nil {
 				continue
 			}
-			if err := L.CallByParam(lua.P{Fn: L.GetGlobal("parse_field"), NRet: 2, Protect: true}, lua.LString(value), _sourceTable); err != nil {
-				continue
-			}
-			ret, errString := L.Get(-2), L.Get(-1)
-			L.Pop(2)
-			if errString.String() != "" {
+			_ = vm.Set("value", fromField)
+			_ = vm.Set("source", _sourceObject)
+			ret, err := vm.RunProgram(program)
+			if err != nil {
 				continue
 			}
 			var newValue any
-			switch field.LuaReturn {
+			switch field.JavaScriptReturn {
 			case service.ParserFieldReturnString:
-				if res, ok := ret.(lua.LString); !ok {
-					continue
+				if str, ok := ret.Export().(string); ok {
+					newValue = str
 				} else {
-					newValue = string(res)
+					continue
 				}
 			case service.ParserFieldReturnNumber:
-				if res, ok := ret.(lua.LNumber); !ok {
-					continue
+				if num, ok := ret.Export().(float64); ok {
+					newValue = num
 				} else {
-					newValue = float64(res)
+					continue
 				}
 			default:
 				continue
@@ -131,4 +105,14 @@ func (s *Service) handleParserField(field *config.ParserField, g gjson.Result, t
 			}
 		}
 	}
+}
+
+func slsLogToMapStringAny(m map[string]string) (res map[string]any) {
+	res = map[string]any{}
+	for k, v := range m {
+		if v != "" && v != "null" {
+			res[k] = v
+		}
+	}
+	return
 }

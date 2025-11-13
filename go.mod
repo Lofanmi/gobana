@@ -8,9 +8,9 @@ require (
 	github.com/Just-maple/structgraph v0.0.0-20210401103730-b665193425d9
 	github.com/Lofanmi/cmap v0.0.0-20250720122524-3befdd14b4e4
 	github.com/aliyun/aliyun-log-go-sdk v0.1.111
+	github.com/dop251/goja v0.0.0-20251103141225-af2ceb9156d7
 	github.com/gin-gonic/gin v1.9.0
 	github.com/google/wire v0.5.1-0.20220620021424-0675cdc9191c
-	github.com/json-iterator/go v1.1.12
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cast v1.9.2
@@ -33,6 +33,7 @@ require (
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dennwc/varint v1.0.0 // indirect
+	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/emirpasic/gods/v2 v2.0.0-alpha // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
@@ -41,11 +42,14 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.11.2 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/grafana/regexp v0.0.0-20221005093135-b4c2bcb0a4b6 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect

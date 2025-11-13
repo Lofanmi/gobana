@@ -9,8 +9,8 @@ import (
 	"github.com/google/wire"
 
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_config"
+	"github.com/Lofanmi/gobana/internal/svc_impls/svc_goja"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_logger"
-	"github.com/Lofanmi/gobana/internal/svc_impls/svc_lua_state"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_provider_factory"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_qq_wry"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_query_builder"
@@ -18,20 +18,14 @@ import (
 )
 
 var ServiceSet = wire.NewSet(
-	wire.Struct(new(svc_logger.AggregationParser), "*"),
-	wire.Bind(new(service.AggregationParser), new(*svc_logger.AggregationParser)),
-
 	wire.Struct(new(svc_config.Service), "*"),
 	wire.Bind(new(service.Config), new(*svc_config.Service)),
 
-	wire.Struct(new(svc_logger.LogParser), "*"),
-	wire.Bind(new(service.LogParser), new(*svc_logger.LogParser)),
+	wire.Struct(new(svc_goja.Service), "*"),
+	wire.Bind(new(service.GoJa), new(*svc_goja.Service)),
 
 	wire.Struct(new(svc_logger.Service), "*"),
 	wire.Bind(new(service.Logger), new(*svc_logger.Service)),
-
-	wire.Struct(new(svc_lua_state.LuaState), "*"),
-	wire.Bind(new(service.LuaState), new(*svc_lua_state.LuaState)),
 
 	wire.Struct(new(svc_provider_factory.ProviderFactory), "*"),
 	wire.Bind(new(service.ProviderFactory), new(*svc_provider_factory.ProviderFactory)),

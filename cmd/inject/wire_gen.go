@@ -10,8 +10,8 @@ import (
 	"github.com/Lofanmi/gobana/internal/app"
 	"github.com/Lofanmi/gobana/internal/config"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_config"
+	"github.com/Lofanmi/gobana/internal/svc_impls/svc_goja"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_logger"
-	"github.com/Lofanmi/gobana/internal/svc_impls/svc_lua_state"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_provider_factory"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_qq_wry"
 	"github.com/Lofanmi/gobana/internal/svc_impls/svc_query_builder"
@@ -33,7 +33,6 @@ func NewApplication() (*app.Application, func(), error) {
 	}
 	queryBuilder := &svc_query_builder.QueryBuilder{
 		ApplicationConfig: application,
-		Backends:          backends,
 		Indexes:           indexes,
 	}
 	qqWry := config.GetConfigQQWry()
@@ -41,21 +40,16 @@ func NewApplication() (*app.Application, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	luaState := &svc_lua_state.LuaState{
+	svc_gojaService := &svc_goja.Service{
 		QQWry: svc_qq_wryQQWry,
 	}
-	logParser := &svc_logger.LogParser{
-		Backends: backends,
-		LuaState: luaState,
-	}
-	aggregationParser := &svc_logger.AggregationParser{}
 	svc_loggerService := &svc_logger.Service{
-		Indexes:           indexes,
-		Backends:          backends,
-		ProviderFactory:   providerFactory,
-		QueryBuilder:      queryBuilder,
-		LogParser:         logParser,
-		AggregationParser: aggregationParser,
+		Indexes:         indexes,
+		Backends:        backends,
+		Providers:       providers,
+		ProviderFactory: providerFactory,
+		QueryBuilder:    queryBuilder,
+		GoJa:            svc_gojaService,
 	}
 	appApplication := &app.Application{
 		ConfigApplication: application,

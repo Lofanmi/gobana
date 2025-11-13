@@ -1,6 +1,8 @@
 package config
 
-import "github.com/Lofanmi/gobana/service"
+import (
+	"github.com/Lofanmi/gobana/service"
+)
 
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -13,7 +15,7 @@ type IndexConfig struct {
 	Name          IndexName            `json:"name"`           // 日志存储名称，如 access-log/json-log/string-log 等
 	Meta          IndexMeta            `json:"meta"`           // 额外配置
 	ProviderName  service.ProviderName `json:"provider_name"`  // 关联的查询器
-	ParserName    ParserName           `json:"parser_name"`    // 关联的解析器
+	ParserName    service.ParserName   `json:"parser_name"`    // 关联的解析器
 	BuildInQuery  BuildInQuery         `json:"build_in_query"` // 内置的快捷查询
 	DefaultFields []string             `json:"default_fields"` // 默认查询字段
 }

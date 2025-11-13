@@ -32,7 +32,7 @@ type Service struct {
 	Providers       config.Providers
 	ProviderFactory service.ProviderFactory
 	QueryBuilder    service.QueryBuilder
-	LuaState        service.LuaState
+	GoJa            service.GoJa
 }
 
 func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp service.SearchResponse, err error) {

@@ -4,8 +4,6 @@ package service
 
 type ProviderName = string
 
-// ---------------------------------------------------------------------------------------------------------------------
-
 type ProviderType = string
 
 const (
@@ -22,17 +20,23 @@ const (
 	MaxChartPoints = 60
 )
 
-type ClientType = string
+// ---------------------------------------------------------------------------------------------------------------------
+
+type ParserName = string
 
 type (
 	ParserFieldType   = string
 	ParserFieldReturn = string
 )
 
+// ---------------------------------------------------------------------------------------------------------------------
+
 const (
 	ParserFieldTypeReplacements ParserFieldType = "replacements"
-	ParserFieldTypeLua          ParserFieldType = "lua"
+	ParserFieldTypeJavaScript   ParserFieldType = "javascript"
 
 	ParserFieldReturnString ParserFieldReturn = "string"
 	ParserFieldReturnNumber ParserFieldReturn = "number"
 )
+
+// ---------------------------------------------------------------------------------------------------------------------

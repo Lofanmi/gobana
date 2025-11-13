@@ -11,8 +11,6 @@ type BackendConfig struct {
 	Name    BackendName `json:"name"`  // eg. cn_sls_access_log_json_log
 	Order   int         `json:"order"`
 	Indexes []IndexName `json:"indexes"`
-	// ParserLogType  string                     `yaml:"parser_log_type"`  // 日志类型解析器
-	// ParserFields   ParserFields               `yaml:"parser_fields"`    // 字段解析器
 }
 
 type Backends map[BackendName]BackendConfig

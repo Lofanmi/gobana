@@ -2,9 +2,6 @@ package gotil
 
 import (
 	"time"
-
-	"github.com/spf13/cast"
-	lua "github.com/yuin/gopher-lua"
 )
 
 func FormatMilliSecond(ts int64) (s string) {
@@ -51,42 +48,4 @@ func DefaultInterval(timeA, timeB, maxChartPoints int64) (interval int) {
 		interval = 3600 * 24
 	}
 	return
-}
-
-func MapToTable(m map[string]any) *lua.LTable {
-	resultTable := &lua.LTable{}
-	for key, element := range m {
-		switch res := element.(type) {
-		case float64, float32, int64, int32, int16, int8, uint, uint64, uint32, uint16, uint8:
-			resultTable.RawSetString(key, lua.LNumber(cast.ToFloat64(res)))
-		case string:
-			resultTable.RawSetString(key, lua.LString(res))
-		case bool:
-			resultTable.RawSetString(key, lua.LBool(res))
-		case []byte:
-			resultTable.RawSetString(key, lua.LString(res))
-		case map[string]any:
-			t := MapToTable(res)
-			resultTable.RawSetString(key, t)
-		case []any:
-			sliceTable := &lua.LTable{}
-			for _, s := range res {
-				switch res2 := s.(type) {
-				case map[string]any:
-					t := MapToTable(res2)
-					sliceTable.Append(t)
-				case float64, float32, int64, int32, int16, int8, uint, uint64, uint32, uint16, uint8:
-					resultTable.RawSetString(key, lua.LNumber(cast.ToFloat64(res2)))
-				case string:
-					resultTable.RawSetString(key, lua.LString(res2))
-				case bool:
-					resultTable.RawSetString(key, lua.LBool(res2))
-				case []byte:
-					resultTable.RawSetString(key, lua.LString(res2))
-				}
-			}
-			resultTable.RawSetString(key, sliceTable)
-		}
-	}
-	return resultTable
 }
