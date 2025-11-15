@@ -18,6 +18,8 @@ var ConfigSet = wire.NewSet(
 
 	config.GetConfigIndexes,
 
+	config.GetConfigParsers,
+
 	config.GetConfigProviders,
 
 	config.GetConfigQQWry,

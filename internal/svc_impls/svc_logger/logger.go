@@ -2,7 +2,7 @@ package svc_logger
 
 import (
 	"context"
-	"regexp"
+	"sort"
 	"time"
 
 	"github.com/Lofanmi/cmap"
@@ -14,8 +14,6 @@ import (
 
 var (
 	_ service.Logger = &Service{}
-
-	reSelectCount = regexp.MustCompile(`(?i)select \*`)
 )
 
 const (
@@ -28,6 +26,7 @@ const (
 // @autowire(service.Logger,set=service)
 type Service struct {
 	Indexes         config.Indexes
+	Parsers         config.Parsers
 	Backends        config.Backends
 	Providers       config.Providers
 	ProviderFactory service.ProviderFactory
@@ -72,12 +71,22 @@ func (s *Service) doSearchIndexes(ctx context.Context, req service.SearchRequest
 		searchResult, _ := m.Get(indexName)
 		switch searchResult.ProviderType {
 		case service.ProviderTypeSls:
+			logs, e := s.doParseSLS(indexName, searchResult.SearchResultSls)
+			if e != nil {
+				err = e
+				return
+			}
+			resp.List = append(resp.List, logs...)
 		case service.ProviderTypeElasticsearch:
+			logs, e := s.doParseElastic(indexName, searchResult.SearchResultElastic)
+			if e != nil {
+				err = e
+				return
+			}
+			resp.List = append(resp.List, logs...)
 		}
 	}
-
-	// resp.RawQuery = result.RawQuery
-	// resp.Count, resp.List, err = s.LogParser.ParseElastic("", nil)
+	sort.Stable(resp.List)
 
 	if req.TrackTotalHits {
 		resp.Count = s.ParseTotal(m)

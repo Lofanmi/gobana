@@ -5,5 +5,5 @@ import (
 )
 
 type GoJa interface {
-	GetRuntime() (vm *goja.Runtime)
+	GetCallable(parserName, functionName string) (vm *goja.Runtime, callable goja.Callable, err error)
 }

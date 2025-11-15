@@ -22,6 +22,10 @@ func GetConfig() Config {
 		if err := DefaultLoader.Load(os.Getenv("CONFIG"), &config); err != nil {
 			panic(err)
 		}
+		for k, parserConfig := range config.Parsers {
+			parserConfig.init()
+			config.Parsers[k] = parserConfig
+		}
 	})
 	return config
 }
@@ -52,3 +56,7 @@ func GetConfigBackends() Backends { return GetConfig().Backends }
 // GetConfigIndexes
 // @autowire(set=config)
 func GetConfigIndexes() Indexes { return GetConfig().Indexes }
+
+// GetConfigParsers
+// @autowire(set=config)
+func GetConfigParsers() Parsers { return GetConfig().Parsers }

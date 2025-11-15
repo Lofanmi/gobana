@@ -8,9 +8,8 @@ import (
 
 type Providers map[service.ProviderName]ProviderConfig
 
-func (s Providers) Match(name string) (res ProviderConfig) {
-	res, _ = s[name]
-	return
+func (s Providers) Match(name string) ProviderConfig {
+	return s[name]
 }
 
 func (s Providers) Default() {

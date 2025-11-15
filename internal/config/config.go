@@ -7,6 +7,7 @@ type Config struct {
 	Providers Providers `json:"providers"`
 	Backends  Backends  `json:"backends"`
 	Indexes   Indexes   `json:"indexes"`
+	Parsers   Parsers   `json:"parsers"`
 }
 
 type Application struct {

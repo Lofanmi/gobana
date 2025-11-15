@@ -15,9 +15,9 @@ const (
 // ---------------------------------------------------------------------------------------------------------------------
 
 const (
-	AtTimestamp    = "@timestamp"
-	DefaultValue   = "default_value"
-	MaxChartPoints = 60
+	GobanaTimestampFunc  = "gobanaTimestamp"
+	GobanaTimestampField = "gobanaTimestamp"
+	MaxChartPoints       = 60
 )
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -32,6 +32,7 @@ type (
 // ---------------------------------------------------------------------------------------------------------------------
 
 const (
+	ParserFieldTypeTimestamp    ParserFieldType = "timestamp"
 	ParserFieldTypeReplacements ParserFieldType = "replacements"
 	ParserFieldTypeJavaScript   ParserFieldType = "javascript"
 

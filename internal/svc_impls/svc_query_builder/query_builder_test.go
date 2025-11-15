@@ -15,43 +15,50 @@ const (
 )
 
 var (
-	backend = config.BackendConfig{
-		Name:          backendName,
-		Indexes:       []string{indexName},
-		DefaultFields: map[string][]string{indexName: {"host", "tag"}},
-		BuildInQuery: map[string]config.BuildInQuery{
-			indexName: {
-				Must: []config.BuildInQueryEntry{
-					{
-						Name:     "必看业务线",
-						Field:    "app_name",
-						Values:   []any{"app_1", "app_2"},
-						Operator: "and",
-						Always:   true,
-					},
+	indexConfig = config.IndexConfig{
+		Label:         "测试索引",
+		Name:          indexName,
+		ProviderName:  "elastic",
+		ParserName:    "json_parser",
+		DefaultFields: []string{"host", "tag"},
+		BuildInQuery: config.BuildInQuery{
+			Must: []config.BuildInQueryEntry{
+				{
+					Name:     "必看业务线",
+					Field:    "app_name",
+					Values:   []any{"app_1", "app_2"},
+					Operator: "and",
+					Always:   true,
 				},
-				MustNot: []config.BuildInQueryEntry{
-					{
-						Name:     "不看机器",
-						Field:    "host",
-						Values:   []any{"host_1", "host_2"},
-						Operator: "and",
-						Always:   true,
-					},
+			},
+			MustNot: []config.BuildInQueryEntry{
+				{
+					Name:     "不看机器",
+					Field:    "host",
+					Values:   []any{"host_1", "host_2"},
+					Operator: "and",
+					Always:   true,
 				},
-				Or: []config.BuildInQueryEntry{
-					{
-						Name:     "都可以",
-						Field:    "tag",
-						Values:   []any{"tag_1", "tag_2"},
-						Operator: "and",
-						Always:   true,
-					},
+			},
+			Or: []config.BuildInQueryEntry{
+				{
+					Name:     "都可以",
+					Field:    "tag",
+					Values:   []any{"tag_1", "tag_2"},
+					Operator: "and",
+					Always:   true,
 				},
 			},
 		},
+		Meta: config.IndexMeta{
+			IndexMetaForElastic: &config.IndexMetaForElastic{
+				Indexes:   []string{indexName},
+				TimeField: "@timestamp",
+				Timezone:  "Asia/Shanghai",
+			},
+		},
 	}
-	backends = config.Backends{backendName: backend}
+	indexes = config.Indexes{indexName: indexConfig}
 )
 
 func TestQueryBuilder_BuildElastic_QueryTypeByHuman(t *testing.T) {
@@ -86,21 +93,21 @@ func TestQueryBuilder_BuildElastic_QueryTypeByHuman(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &QueryBuilder{Backends: backends}
-			gotQueries, gotAggregations, err := s.BuildElastic(tt.args.backendName, tt.args.req)
+			s := &QueryBuilder{Indexes: indexes}
+			gotQuery, gotAggregation, err := s.BuildElastic(tt.args.backendName, tt.args.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BuildElastic() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			for index, query := range gotQueries {
-				m, _ := query.Source()
+			if gotQuery != nil {
+				m, _ := gotQuery.Source()
 				data, _ := json.MarshalIndent(&m, "", "    ")
-				t.Logf("%s:\n%s", index, string(data))
-				if v := gotAggregations[index]; v != nil {
-					m2, _ := v.Source()
-					data2, _ := json.MarshalIndent(&m2, "", "    ")
-					t.Logf("%s:\n%s", index, string(data2))
-				}
+				t.Logf("Query:\n%s", string(data))
+			}
+			if gotAggregation != nil {
+				m2, _ := gotAggregation.Source()
+				data2, _ := json.MarshalIndent(&m2, "", "    ")
+				t.Logf("Aggregation:\n%s", string(data2))
 			}
 		})
 	}
@@ -138,21 +145,21 @@ func TestQueryBuilder_BuildElastic_QueryTypeByLucene(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &QueryBuilder{}
-			gotQueries, gotAggregations, err := s.BuildElastic(tt.args.backendName, tt.args.req)
+			s := &QueryBuilder{Indexes: indexes}
+			gotQuery, gotAggregation, err := s.BuildElastic(tt.args.backendName, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("SearchQueryElastic() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BuildElastic() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			for index, query := range gotQueries {
-				m, _ := query.Source()
+			if gotQuery != nil {
+				m, _ := gotQuery.Source()
 				data, _ := json.MarshalIndent(&m, "", "    ")
-				t.Logf("%s:\n%s", index, string(data))
-				if v := gotAggregations[index]; v != nil {
-					m2, _ := v.Source()
-					data2, _ := json.MarshalIndent(&m2, "", "    ")
-					t.Logf("%s:\n%s", index, string(data2))
-				}
+				t.Logf("Query:\n%s", string(data))
+			}
+			if gotAggregation != nil {
+				m2, _ := gotAggregation.Source()
+				data2, _ := json.MarshalIndent(&m2, "", "    ")
+				t.Logf("Aggregation:\n%s", string(data2))
 			}
 		})
 	}

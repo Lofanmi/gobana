@@ -3,6 +3,7 @@ package svc_logger
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/Lofanmi/gobana/service"
@@ -10,11 +11,15 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+var (
+	reSelectCount = regexp.MustCompile(`(?i)select \*`)
+)
+
 func (s *Service) doSearchIndexSls(ctx context.Context, cli sls.ClientInterface, req service.SearchRequest, indexName, query string) (result service.SearchResultSls, err error) {
 	result.RawQuery = query
 	index := s.Indexes[indexName]
 	project, store := index.Meta.IndexMetaForSls.Project, index.Meta.IndexMetaForSls.Store
-	g, ctx := errgroup.WithContext(ctx)
+	g, _ := errgroup.WithContext(ctx)
 	from, to := req.TimeA/1000, req.TimeB/1000
 	offset, limit := int64((req.PageNo-1)*req.PageSize), int64(req.PageSize)
 	var searchStatement, analyticStatement string

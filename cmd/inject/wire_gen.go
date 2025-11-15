@@ -27,6 +27,7 @@ func NewApplication() (*app.Application, func(), error) {
 		Backends: backends,
 		Indexes:  indexes,
 	}
+	parsers := config.GetConfigParsers()
 	providers := config.GetConfigProviders()
 	providerFactory := &svc_provider_factory.ProviderFactory{
 		Providers: providers,
@@ -41,10 +42,12 @@ func NewApplication() (*app.Application, func(), error) {
 		return nil, nil, err
 	}
 	svc_gojaService := &svc_goja.Service{
-		QQWry: svc_qq_wryQQWry,
+		Parsers: parsers,
+		QQWry:   svc_qq_wryQQWry,
 	}
 	svc_loggerService := &svc_logger.Service{
 		Indexes:         indexes,
+		Parsers:         parsers,
 		Backends:        backends,
 		Providers:       providers,
 		ProviderFactory: providerFactory,

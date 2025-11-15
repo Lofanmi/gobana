@@ -45,7 +45,6 @@ func (s *Service) parseAggregationSls(sr service.SearchResultSls, set *sortedset
 		}
 		set.AddOrUpdate(keyName, sortedset.SCORE(score), sum)
 	}
-	return
 }
 
 func (s *Service) parseAggregationElastic(sr service.SearchResultElastic, set *sortedset.SortedSet) {
@@ -63,7 +62,6 @@ func (s *Service) parseAggregationElastic(sr service.SearchResultElastic, set *s
 		}
 		set.AddOrUpdate(keyName, sortedset.SCORE(score), sum)
 	}
-	return
 }
 
 func (s *Service) parseAggregation(timeA, timeB, interval int64, fn func(set *sortedset.SortedSet)) (xAxis []string, yAxis []int64, err error) {
