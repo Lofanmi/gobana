@@ -2,10 +2,11 @@ package config
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type AuthConfig struct {
@@ -55,7 +56,7 @@ func (s *AuthForKibanaProxy) init() (err error) {
 	}
 	auth.Params.Username = s.Username
 	auth.Params.Password = s.Password
-	data, err := json.Marshal(&auth)
+	data, err := jsoniter.Marshal(&auth)
 	if err != nil {
 		return
 	}

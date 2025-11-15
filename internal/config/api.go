@@ -3,6 +3,7 @@ package config
 import (
 	_ "embed"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -19,7 +20,7 @@ var (
 
 func GetConfig() Config {
 	once.Do(func() {
-		if err := DefaultLoader.Load(os.Getenv("CONFIG"), &config); err != nil {
+		if err := DefaultLoader.Load(strings.TrimSpace(os.Getenv("CONFIG")), &config); err != nil {
 			panic(err)
 		}
 		for k, parserConfig := range config.Parsers {

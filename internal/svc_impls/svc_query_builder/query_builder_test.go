@@ -1,12 +1,12 @@
 package svc_query_builder
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/Lofanmi/gobana/internal/config"
 	"github.com/Lofanmi/gobana/service"
+	jsoniter "github.com/json-iterator/go"
 )
 
 const (
@@ -101,12 +101,12 @@ func TestQueryBuilder_BuildElastic_QueryTypeByHuman(t *testing.T) {
 			}
 			if gotQuery != nil {
 				m, _ := gotQuery.Source()
-				data, _ := json.MarshalIndent(&m, "", "    ")
+				data, _ := jsoniter.MarshalIndent(&m, "", "    ")
 				t.Logf("Query:\n%s", string(data))
 			}
 			if gotAggregation != nil {
 				m2, _ := gotAggregation.Source()
-				data2, _ := json.MarshalIndent(&m2, "", "    ")
+				data2, _ := jsoniter.MarshalIndent(&m2, "", "    ")
 				t.Logf("Aggregation:\n%s", string(data2))
 			}
 		})
@@ -153,12 +153,12 @@ func TestQueryBuilder_BuildElastic_QueryTypeByLucene(t *testing.T) {
 			}
 			if gotQuery != nil {
 				m, _ := gotQuery.Source()
-				data, _ := json.MarshalIndent(&m, "", "    ")
+				data, _ := jsoniter.MarshalIndent(&m, "", "    ")
 				t.Logf("Query:\n%s", string(data))
 			}
 			if gotAggregation != nil {
 				m2, _ := gotAggregation.Source()
-				data2, _ := json.MarshalIndent(&m2, "", "    ")
+				data2, _ := jsoniter.MarshalIndent(&m2, "", "    ")
 				t.Logf("Aggregation:\n%s", string(data2))
 			}
 		})

@@ -19,11 +19,11 @@ type ParserConfig struct {
 type ParserField struct {
 	Name             string                  `json:"name"`
 	Type             service.ParserFieldType `json:"type"`
-	FromFields       []string                `json:"from_field"`
-	ToField          string                  `json:"to_field"`
-	TrimSet          string                  `json:"trim_set"`
-	JavaScriptField  string                  `json:"javascript_field"` // 记录脚本函数，用于字段处理
-	JavaScriptReturn string                  `json:"javascript_return"`
+	FromFields       []string                `json:"from_field,omitempty"`
+	ToField          string                  `json:"to_field,omitempty"`
+	TrimSet          string                  `json:"trim_set,omitempty"`
+	JavaScriptField  string                  `json:"javascript_field,omitempty"` // 记录脚本函数，用于字段处理
+	JavaScriptReturn string                  `json:"javascript_return,omitempty"`
 }
 
 type ParserName = string

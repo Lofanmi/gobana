@@ -1,13 +1,13 @@
 package svc_logger
 
 import (
-	"encoding/json"
 	"errors"
 	"strings"
 
 	"github.com/Lofanmi/gobana/internal/config"
 	"github.com/Lofanmi/gobana/service"
 	"github.com/dop251/goja"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cast"
 )
 
@@ -34,7 +34,7 @@ func (s *Service) doParseElastic(indexName string, r service.SearchResultElastic
 	}
 	for _, _hit := range r.Response.Hits.Hits {
 		var data map[string]any
-		if err = json.Unmarshal(_hit.Source, &data); err != nil {
+		if err = jsoniter.Unmarshal(_hit.Source, &data); err != nil {
 			return
 		}
 		data["_index"] = indexName

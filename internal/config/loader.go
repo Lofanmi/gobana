@@ -1,11 +1,11 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
 	"regexp"
 	"strings"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/tidwall/gjson"
 )
 
@@ -28,7 +28,7 @@ func (localFileLoader) Load(filename string, dst *Config) (err error) {
 	if err != nil {
 		return
 	}
-	return json.Unmarshal(processedData, dst)
+	return jsoniter.Unmarshal(processedData, dst)
 }
 
 func processJSON(data []byte) (res []byte, err error) {

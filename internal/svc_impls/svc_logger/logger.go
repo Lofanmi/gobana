@@ -35,9 +35,12 @@ type Service struct {
 }
 
 func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp service.SearchResponse, err error) {
-	req.PageNo = gotil.IfThen(req.PageNo <= 0, defaultPageNo)
-	req.PageSize = gotil.IfThen(req.PageSize <= 0, defaultPageSize)
-	req.PageSize = gotil.IfThen(req.PageNo > defaultMaxPageSize, defaultPageNo)
+	if req.PageNo <= 0 {
+		req.PageNo = defaultPageNo
+	}
+	if req.PageSize <= 0 || req.PageSize > defaultMaxPageSize {
+		req.PageSize = defaultPageSize
+	}
 	if req.TimeA == 0 || req.TimeB == 0 {
 		t2 := time.Now()
 		t1 := t2.Add(-time.Hour)
@@ -51,6 +54,7 @@ func (s *Service) Search(ctx context.Context, req service.SearchRequest) (resp s
 		resp.TimeA, resp.TimeB = req.TimeA, req.TimeB
 	}()
 
+	err = s.doSearchIndexes(ctx, req, &resp)
 	return
 }
 

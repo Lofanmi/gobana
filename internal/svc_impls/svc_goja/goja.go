@@ -31,13 +31,17 @@ func (s *Service) GetCallable(parserName, functionName string) (vm *goja.Runtime
 		err = errors.New("parser program not found")
 		return
 	}
+	if functionName == "" || functionName[0] != '@' {
+		err = errors.New("functionName is invalid")
+		return
+	}
 	vm = goja.New()
 	s.registerServiceToVM(vm)
 	_, err = vm.RunProgram(parser.Program)
 	if err != nil {
 		return
 	}
-	fn := vm.Get(functionName)
+	fn := vm.Get(functionName[1:])
 	if fn == nil || goja.IsUndefined(fn) || goja.IsNull(fn) {
 		err = errors.New("function not found in JavaScript program")
 		return

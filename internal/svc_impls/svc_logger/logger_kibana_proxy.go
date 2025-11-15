@@ -2,7 +2,6 @@ package svc_logger
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -10,6 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/Lofanmi/gobana/service"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/olivere/elastic/v7"
 	"github.com/olivere/elastic/v7/uritemplates"
 )
@@ -57,7 +57,7 @@ func (s *Service) doSearchIndexKibanaProxy(ctx context.Context, cli *elastic.Cli
 	}); err != nil {
 		return
 	}
-	if err = json.Unmarshal(res.Body, &result.Response); err != nil {
+	if err = jsoniter.Unmarshal(res.Body, &result.Response); err != nil {
 		result.Response = new(elastic.SearchResult)
 		result.Response.Header = res.Header
 		result.ErrorResponse = err
