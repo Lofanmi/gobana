@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 type Logger interface {
@@ -99,6 +101,17 @@ type LogItems []LogItem
 func (s LogItems) Len() int           { return len(s) }
 func (s LogItems) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s LogItems) Less(i, j int) bool { return s[i].Timestamp > s[j].Timestamp }
+
+func (s LogItem) MarshalJSON() ([]byte, error) {
+	result := make(map[string]any)
+	result["storage"] = s.Storage
+	result["source"] = s.Source
+	result["log"] = s.Log
+	for key, value := range s.Log {
+		result[key] = value
+	}
+	return jsoniter.Marshal(result)
+}
 
 // func curlTemplate(item *AccessLog) string {
 // 	isJSONString := func(s string) bool {
